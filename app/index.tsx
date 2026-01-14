@@ -1,7 +1,8 @@
 import { OrbitControls, PerspectiveCamera } from '@react-three/drei/native';
 import { Canvas } from '@react-three/fiber/native';
-import React, { ComponentProps, Suspense, useState } from 'react';
+import React, { ComponentProps, Suspense, useCallback, useEffect, useRef, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
+import type { OrbitControls as OrbitControlsImpl } from 'three-stdlib';
 
 // Extract the onChange parameter type using TypeScript utility types
 type OrbitControlsProps = ComponentProps<typeof OrbitControls>;
@@ -35,14 +36,57 @@ function Ground() {
   );
 }
 
-export default function Index() {
-  // Track where the camera is positioned
-  const [azimuthalAngle, setAzimuthalAngle] = useState(0);
-  const [polarAngle, setPolarAngle] = useState(0);
+// Helper function to calculate initial angles from camera position
+// This converts Cartesian coordinates [x, y, z] to spherical coordinates
+// matching OrbitControls' convention
+function calculateAnglesFromPosition([x, y, z]: [number, number, number]): {
+  azimuthal: number;
+  polar: number;
+} {
+  // Calculate distance from origin
+  const radius = Math.sqrt(x * x + y * y + z * z);
 
-  const handleCameraChange: OnChangeHandler = (e) => {
-    setAzimuthalAngle(e?.target.getAzimuthalAngle() ?? 0);
-    setPolarAngle(e?.target.getPolarAngle() ?? 0);
+  // Azimuthal angle: horizontal rotation in XZ plane (atan2(x, z))
+  const azimuthal = Math.atan2(x, z);
+
+  // Polar angle: vertical angle from Y axis (acos(y / radius))
+  const polar = Math.acos(y / radius);
+
+  return { azimuthal, polar };
+}
+
+export default function Index() {
+  const initialCameraPosition: [number, number, number] = [3, 3, 5];
+
+  // Calculate initial angles from position
+  const initialAngles = calculateAnglesFromPosition(initialCameraPosition);
+
+  // Track where the camera is positioned
+  const [azimuthalAngle, setAzimuthalAngle] = useState(initialAngles.azimuthal);
+  const [polarAngle, setPolarAngle] = useState(initialAngles.polar);
+
+  const controlsRef = useRef<OrbitControlsImpl>(null);
+
+  // Method to update camera angles from the controls ref
+  const updateCameraAngles = useCallback(() => {
+    if (controlsRef.current) {
+      setAzimuthalAngle(controlsRef.current.getAzimuthalAngle());
+      setPolarAngle(controlsRef.current.getPolarAngle());
+    }
+  }, []);
+
+  // Capture initial angles from OrbitControls after it initializes
+  useEffect(() => {
+    // Small delay to ensure OrbitControls has initialized
+    const timeout = setTimeout(() => {
+      updateCameraAngles();
+    }, 100);
+
+    return () => clearTimeout(timeout);
+  }, [updateCameraAngles]);
+
+  const handleCameraChange: OnChangeHandler = () => {
+    updateCameraAngles();
   };
 
   return (
@@ -64,6 +108,7 @@ export default function Index() {
 
         {/* This handles the rotation (horizontal) and perspective (vertical) */}
         <OrbitControls
+          ref={controlsRef}
           enablePan={false} // Keeps the focus on the center
           maxPolarAngle={Math.PI / 2.1} // Prevents the camera from going below the floor
           onChange={handleCameraChange}
@@ -71,7 +116,7 @@ export default function Index() {
 
         <PerspectiveCamera
           makeDefault
-          position={[3, 3, 5]}
+          position={initialCameraPosition}
         />
       </Canvas>
     </View>
