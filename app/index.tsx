@@ -1,9 +1,9 @@
 import { Die } from '@/components/die';
 import { OrbitControls, PerspectiveCamera } from '@react-three/drei/native';
-import { Canvas } from '@react-three/fiber/native';
+import { Canvas, useFrame } from '@react-three/fiber/native';
 import React, { ComponentProps, Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Button, Text as RNText, StyleSheet, View } from 'react-native';
-import type { PerspectiveCamera as PerspectiveCameraType } from 'three';
+import type { Group, PerspectiveCamera as PerspectiveCameraType } from 'three';
 import type { OrbitControls as OrbitControlsImpl } from 'three-stdlib';
 
 // Extract the onChange parameter type using TypeScript utility types
@@ -35,6 +35,33 @@ function Ground() {
       <planeGeometry args={[10, 10]} />
       <meshStandardMaterial color="#999" />
     </mesh>
+  );
+}
+
+// Animated group that spins the die along the vertical (Y) axis
+function AnimatedDieGroup() {
+  const outerGroupRef = useRef<Group>(null);
+  const rotationSpeed = (2 * Math.PI) * 0.5; // Half a rotation per second
+
+  useFrame((state, delta) => {
+    if (outerGroupRef.current) {
+      // Rotate around world Y-axis (vertical axis)
+      outerGroupRef.current.rotation.y += rotationSpeed * delta;
+    }
+  });
+
+  return (
+    <group
+      ref={outerGroupRef}
+      position={[0, Math.sqrt(3) / 2 - 0.29, 0]}
+    >
+      {/* Inner group applies the rotation to make die stand on corner */}
+      <group
+        rotation={[Math.atan(1 / Math.sqrt(2)), 0, Math.PI / 4]}
+      >
+        <Die />
+      </group>
+    </group>
   );
 }
 
@@ -146,12 +173,7 @@ export default function Index() {
         <pointLight position={[-10, 10, -10]} intensity={50}/>
 
         <Suspense fallback={null}>
-          <group
-            rotation={[Math.atan(1 / Math.sqrt(2)), 0, Math.PI / 4]}
-            position={[0, Math.sqrt(3) / 2 - 0.29, 0]}
-          >
-            <Die />
-          </group>
+          <AnimatedDieGroup />
           <Ground />
         </Suspense>
 
