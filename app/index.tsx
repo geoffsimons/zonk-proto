@@ -1,6 +1,6 @@
 import { OrbitControls, PerspectiveCamera } from '@react-three/drei/native';
 import { Canvas } from '@react-three/fiber/native';
-import React, { ComponentProps, Suspense, useCallback, useEffect, useRef, useState } from 'react';
+import React, { ComponentProps, Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Button, StyleSheet, Text, View } from 'react-native';
 import type { PerspectiveCamera as PerspectiveCameraType } from 'three';
 import type { OrbitControls as OrbitControlsImpl } from 'three-stdlib';
@@ -56,6 +56,21 @@ function calculateAnglesFromPosition([x, y, z]: [number, number, number]): {
   return { azimuthal, polar };
 }
 
+/**
+ *
+ * @param initialCameraPosition [x, y, z]
+ * @param azimuthal
+ * @param polar
+ * @returns
+ */
+function calculateCameraPositionFromAngles([x, y, z]: [number, number, number], azimuthal: number, polar: number): [number, number, number] {
+  const radius = Math.sqrt(x * x + y * y + z * z);
+  const newX = radius * Math.sin(polar) * Math.cos(azimuthal);
+  const newY = radius * Math.sin(polar) * Math.sin(azimuthal);
+  const newZ = radius * Math.cos(polar);
+  return [newX, newY, newZ];
+}
+
 export default function Index() {
   const initialCameraPosition: [number, number, number] = [3, 3, 5];
 
@@ -65,6 +80,8 @@ export default function Index() {
   // Track where the camera is positioned
   const [azimuthalAngle, setAzimuthalAngle] = useState(initialAngles.azimuthal);
   const [polarAngle, setPolarAngle] = useState(initialAngles.polar);
+
+  const cameraPosition = useMemo(() => calculateCameraPositionFromAngles(initialCameraPosition, azimuthalAngle, polarAngle), [azimuthalAngle, polarAngle]);
 
   const controlsRef = useRef<OrbitControlsImpl>(null);
   const cameraRef = useRef<PerspectiveCameraType>(null);
@@ -113,7 +130,10 @@ export default function Index() {
     <View style={styles.container}>
       <View style={styles.infoContainer}>
         <Text style={styles.infoText}>
-          Camera Angle: [{azimuthalAngle.toFixed(3)}, {polarAngle.toFixed(3)}]
+          Angle: [{azimuthalAngle.toFixed(3)}, {polarAngle.toFixed(3)}]
+        </Text>
+        <Text style={styles.infoText}>
+          Position: [{cameraPosition[0].toFixed(3)}, {cameraPosition[1].toFixed(3)}, {cameraPosition[2].toFixed(3)}]
         </Text>
         <Button title="Reset Camera" onPress={resetCamera} />
       </View>
