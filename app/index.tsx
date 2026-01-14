@@ -3,7 +3,6 @@ import { Canvas } from '@react-three/fiber/native';
 import React, { ComponentProps, Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Button, Text as RNText, StyleSheet, View } from 'react-native';
 import type { PerspectiveCamera as PerspectiveCameraType } from 'three';
-import { DataTexture, RGBAFormat, UnsignedByteType } from 'three';
 import type { OrbitControls as OrbitControlsImpl } from 'three-stdlib';
 
 // Extract the onChange parameter type using TypeScript utility types
@@ -22,111 +21,10 @@ function ColoredCube() {
   );
 }
 
-// Helper to create a texture with a number using DataTexture
-// This creates a simple bitmap representation of numbers
-function createNumberTexture(number: number, size = 128): DataTexture {
-  const data = new Uint8Array(size * size * 4);
-
-  // Light cream color for background: RGB(255, 253, 208)
-  const creamR = 255;
-  const creamG = 253;
-  const creamB = 208;
-
-  // Fill with light cream background
-  for (let i = 0; i < size * size; i++) {
-    data[i * 4] = creamR;     // R
-    data[i * 4 + 1] = creamG; // G
-    data[i * 4 + 2] = creamB; // B
-    data[i * 4 + 3] = 255;    // A
-  }
-
-  // Draw number using a simple 7-segment-like pattern
-  // This is a simplified approach - creates a visible number pattern
-  const centerX = size / 2;
-  const centerY = size / 2;
-  const thickness = size * 0.12; // Make numbers thicker for better visibility
-  const width = size * 0.5; // Make numbers wider
-  const height = size * 0.6; // Make numbers taller
-
-  const drawLine = (x1: number, y1: number, x2: number, y2: number) => {
-    const dx = x2 - x1;
-    const dy = y2 - y1;
-    const length = Math.sqrt(dx * dx + dy * dy);
-    const steps = Math.ceil(length);
-
-    for (let i = 0; i <= steps; i++) {
-      const t = i / steps;
-      const x = Math.round(x1 + dx * t);
-      const y = Math.round(y1 + dy * t);
-
-      // Draw thick line
-      for (let dy2 = -thickness; dy2 <= thickness; dy2++) {
-        for (let dx2 = -thickness; dx2 <= thickness; dx2++) {
-          const px = x + dx2;
-          const py = y + dy2;
-          if (px >= 0 && px < size && py >= 0 && py < size) {
-            const idx = (py * size + px) * 4;
-            // Dark chocolate color: RGB(67, 40, 24)
-            data[idx] = 67;     // R
-            data[idx + 1] = 40; // G
-            data[idx + 2] = 24; // B
-          }
-        }
-      }
-    }
-  };
-
-  // Draw numbers as simple line patterns
-  // This is a basic representation - can be enhanced
-  switch (number) {
-    case 1:
-      drawLine(centerX, centerY - height/2, centerX, centerY + height/2);
-      break;
-    case 2:
-      drawLine(centerX - width/2, centerY - height/2, centerX + width/2, centerY - height/2);
-      drawLine(centerX + width/2, centerY - height/2, centerX + width/2, centerY);
-      drawLine(centerX - width/2, centerY, centerX + width/2, centerY);
-      drawLine(centerX - width/2, centerY, centerX - width/2, centerY + height/2);
-      drawLine(centerX - width/2, centerY + height/2, centerX + width/2, centerY + height/2);
-      break;
-    case 3:
-      drawLine(centerX - width/2, centerY - height/2, centerX + width/2, centerY - height/2);
-      drawLine(centerX + width/2, centerY - height/2, centerX + width/2, centerY + height/2);
-      drawLine(centerX - width/2, centerY, centerX + width/2, centerY);
-      drawLine(centerX - width/2, centerY + height/2, centerX + width/2, centerY + height/2);
-      break;
-    case 4:
-      drawLine(centerX - width/2, centerY - height/2, centerX - width/2, centerY);
-      drawLine(centerX - width/2, centerY, centerX + width/2, centerY);
-      drawLine(centerX + width/2, centerY - height/2, centerX + width/2, centerY + height/2);
-      break;
-    case 5:
-      drawLine(centerX - width/2, centerY - height/2, centerX + width/2, centerY - height/2);
-      drawLine(centerX - width/2, centerY - height/2, centerX - width/2, centerY);
-      drawLine(centerX - width/2, centerY, centerX + width/2, centerY);
-      drawLine(centerX + width/2, centerY, centerX + width/2, centerY + height/2);
-      drawLine(centerX - width/2, centerY + height/2, centerX + width/2, centerY + height/2);
-      break;
-    case 6:
-      drawLine(centerX - width/2, centerY - height/2, centerX - width/2, centerY + height/2);
-      drawLine(centerX - width/2, centerY - height/2, centerX + width/2, centerY - height/2);
-      drawLine(centerX - width/2, centerY, centerX + width/2, centerY);
-      drawLine(centerX + width/2, centerY, centerX + width/2, centerY + height/2);
-      drawLine(centerX - width/2, centerY + height/2, centerX + width/2, centerY + height/2);
-      break;
-  }
-
-  const texture = new DataTexture(data, size, size);
-  texture.format = RGBAFormat;
-  texture.type = UnsignedByteType;
-  texture.needsUpdate = true;
-  return texture;
-}
-
 // Helper to get dot positions for each number (standard dice pattern)
 function getDotsForNumber(number: number): Array<[number, number]> {
   const positions: Array<[number, number]> = [];
-  const offset = 0.15; // Distance from center for dots
+  const offset = 0.25; // Distance from center for dots
 
   switch (number) {
     case 1:
@@ -165,9 +63,6 @@ function Die() {
   const dieSize = 1;
   const dotSize = 0.08;
   const dotOffset = 0.51; // Slightly outside the cube face
-
-  // Die face numbers in standard layout
-  const faceNumbers = [3, 4, 5, 2, 1, 6];
 
   // Face configurations: [number, position, rotation]
   const faces = [
