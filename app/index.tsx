@@ -88,8 +88,12 @@ function Die() {
         return (
           <group key={faceIndex} position={face.position} rotation={face.rotation}>
             {dots.map((dotPos, dotIndex) => (
-              <mesh key={dotIndex} position={[dotPos[0], dotPos[1], 0]}>
-                <sphereGeometry args={[dotSize, 16, 16]} />
+              <mesh
+                key={dotIndex}
+                position={[dotPos[0], dotPos[1], 0]}
+                rotation={[Math.PI / 2, 0, 0]} // Rotate cylinder from Y-axis to Z-axis (perpendicular to face)
+              >
+                <cylinderGeometry args={[dotSize, dotSize, 0.001]} />
                 <meshStandardMaterial color="#432818" /> {/* Dark chocolate */}
               </mesh>
             ))}
