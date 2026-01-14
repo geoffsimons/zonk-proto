@@ -140,11 +140,18 @@ export default function Index() {
       </View>
       <Canvas>
         {/* Lighting is essential to see 3D depth and colors */}
-        <ambientLight intensity={0.5} />
-        <pointLight position={[10, 10, 10]} />
+        <ambientLight intensity={0.1} />
+        <pointLight position={[10, 10, 10]} intensity={50}/>
+        <pointLight position={[-10, 10, 10]} intensity={50}/>
+        <pointLight position={[-10, 10, -10]} intensity={50}/>
 
         <Suspense fallback={null}>
-          <Die />
+          <group
+            rotation={[Math.atan(1 / Math.sqrt(2)), 0, Math.PI / 4]}
+            position={[0, Math.sqrt(3) / 2 - 0.29, 0]}
+          >
+            <Die />
+          </group>
           <Ground />
         </Suspense>
 
