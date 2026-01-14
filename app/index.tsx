@@ -1,7 +1,8 @@
 import { OrbitControls, PerspectiveCamera } from '@react-three/drei/native';
 import { Canvas } from '@react-three/fiber/native';
 import React, { ComponentProps, Suspense, useCallback, useEffect, useRef, useState } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { Button, StyleSheet, Text, View } from 'react-native';
+import type { PerspectiveCamera as PerspectiveCameraType } from 'three';
 import type { OrbitControls as OrbitControlsImpl } from 'three-stdlib';
 
 // Extract the onChange parameter type using TypeScript utility types
@@ -66,6 +67,7 @@ export default function Index() {
   const [polarAngle, setPolarAngle] = useState(initialAngles.polar);
 
   const controlsRef = useRef<OrbitControlsImpl>(null);
+  const cameraRef = useRef<PerspectiveCameraType>(null);
 
   // Method to update camera angles from the controls ref
   const updateCameraAngles = useCallback(() => {
@@ -75,11 +77,29 @@ export default function Index() {
     }
   }, []);
 
+  // Method to reset camera to initial position
+  const resetCamera = useCallback(() => {
+    if (controlsRef.current) {
+      // Reset OrbitControls (this will restore saved state)
+      controlsRef.current.reset();
+
+      // Update angles after reset
+      // Use a small delay to ensure the reset has completed
+      setTimeout(() => {
+        updateCameraAngles();
+      }, 50);
+    }
+  }, [updateCameraAngles]);
+
   // Capture initial angles from OrbitControls after it initializes
   useEffect(() => {
     // Small delay to ensure OrbitControls has initialized
     const timeout = setTimeout(() => {
-      updateCameraAngles();
+      if (controlsRef.current) {
+        // Save the initial state so reset() works correctly
+        controlsRef.current.saveState();
+        updateCameraAngles();
+      }
     }, 100);
 
     return () => clearTimeout(timeout);
@@ -95,6 +115,7 @@ export default function Index() {
         <Text style={styles.infoText}>
           Camera Angle: [{azimuthalAngle.toFixed(3)}, {polarAngle.toFixed(3)}]
         </Text>
+        <Button title="Reset Camera" onPress={resetCamera} />
       </View>
       <Canvas>
         {/* Lighting is essential to see 3D depth and colors */}
@@ -115,6 +136,7 @@ export default function Index() {
         />
 
         <PerspectiveCamera
+          ref={cameraRef}
           makeDefault
           position={initialCameraPosition}
         />
