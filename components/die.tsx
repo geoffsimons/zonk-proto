@@ -54,7 +54,7 @@ export function Die() {
   ];
 
   return (
-    <group position={[0, 0.5, 0]}>
+    <group position={[0, 0, 0]}>
       {/* The cube itself - light cream color */}
       <mesh>
         <boxGeometry args={[dieSize, dieSize, dieSize]} />

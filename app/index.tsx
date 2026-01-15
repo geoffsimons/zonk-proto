@@ -53,7 +53,7 @@ function AnimatedDieGroup() {
   return (
     <group
       ref={outerGroupRef}
-      position={[0, Math.sqrt(3) / 2 - 0.29, 0]}
+      position={[0, Math.sqrt(3) / 2, 0]}
     >
       {/* Inner group applies the rotation to make die stand on corner */}
       <group
