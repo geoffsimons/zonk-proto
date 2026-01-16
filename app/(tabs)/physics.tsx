@@ -1,26 +1,77 @@
+import LoadingView from '@/components/LoadingView';
 import { OrbitControls, PerspectiveCamera } from '@react-three/drei/native';
 import { Canvas } from '@react-three/fiber/native';
 import type { RapierRigidBody } from '@react-three/rapier';
 import { Physics, RigidBody } from '@react-three/rapier';
-import React, { Suspense, useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
-
-function LoadingView() {
-  return (
-    <View style={styles.loadingContainer}>
-      <ActivityIndicator size="large" color="#fff" />
-      <Text style={styles.loadingText}>Loading...</Text>
-    </View>
-  )
-}
+import React, { Suspense, useCallback, useEffect, useRef, useState } from 'react';
+import { StyleSheet, View } from 'react-native';
 
 const GRAVITY = -9.81;
 
-function ThrownBall() {
+function OutOfBounds({ onOutOfBounds }: { onOutOfBounds: () => void }) {
+  const handleOutOfBounds = useCallback(() => {
+    onOutOfBounds();
+  }, [onOutOfBounds]);
+
+  return (
+    <RigidBody
+      type="fixed"
+      onCollisionEnter={handleOutOfBounds}
+    >
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.2, 0]} receiveShadow>
+        <planeGeometry args={[200, 200]} />
+        <meshStandardMaterial color="red" side={2} />
+      </mesh>
+    </RigidBody>
+  );
+}
+
+function Box() {
+  return (
+    <RigidBody
+      type="fixed"
+      restitution={0.9}
+      friction={0.5}
+    >
+      <group>
+        {/* Ground */}
+        <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0, 0]} receiveShadow>
+          <planeGeometry args={[20, 20]} />
+          <meshStandardMaterial color="green" side={2} />
+        </mesh>
+        {/* Wall */}
+        <mesh rotation={[0, Math.PI / 2, 0]} position={[10, 1.25, 0]} receiveShadow>
+          <planeGeometry args={[20, 2.5]} />
+          <meshStandardMaterial color="blue" side={2} />
+        </mesh>
+        <mesh rotation={[0, -Math.PI / 2, 0]} position={[-10, 1.25, 0]} receiveShadow>
+          <planeGeometry args={[20, 2.5]} />
+          <meshStandardMaterial color="blue" side={2} />
+        </mesh>
+        <mesh rotation={[0, 0, 0]} position={[0, 1.25, 10]} receiveShadow>
+          <planeGeometry args={[20, 2.5]} />
+          <meshStandardMaterial color="blue" side={2} />
+        </mesh>
+        <mesh rotation={[0, 0, 0]} position={[0, 1.25, -10]} receiveShadow>
+          <planeGeometry args={[20, 2.5]} />
+          <meshStandardMaterial color="blue" side={2} />
+        </mesh>
+
+      </group>
+    </RigidBody>
+  );
+}
+
+function Playfield() {
   const ballRef = useRef<RapierRigidBody>(null);
 
   const handleRest = () => {
     console.log('Rest');
+  };
+
+  const handleOutOfBounds = () => {
+    console.log('Spaz!');
+    ballRef.current?.sleep();
   };
 
   return (
@@ -29,8 +80,8 @@ function ThrownBall() {
         ref={ballRef}
         colliders="ball"
         position={[0, 10, 0]}
-        linearVelocity={[1, 0, 0]}
-        restitution={0.8}
+        linearVelocity={[5, 0, 0]}
+        restitution={0.9}
         onSleep={handleRest}
       >
         <mesh castShadow>
@@ -39,37 +90,8 @@ function ThrownBall() {
         </mesh>
       </RigidBody>
 
-      <RigidBody
-        type="fixed"
-        restitution={1}
-        friction={0.5}
-      >
-        <group>
-          {/* Ground */}
-          <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0, 0]} receiveShadow>
-            <planeGeometry args={[20, 20]} />
-            <meshStandardMaterial color="green" side={2} />
-          </mesh>
-          {/* Wall */}
-          <mesh rotation={[0, Math.PI / 2, 0]} position={[10, 1.25, 0]} receiveShadow>
-            <planeGeometry args={[20, 2.5]} />
-            <meshStandardMaterial color="blue" side={2} />
-          </mesh>
-          <mesh rotation={[0, -Math.PI / 2, 0]} position={[-10, 1.25, 0]} receiveShadow>
-            <planeGeometry args={[20, 2.5]} />
-            <meshStandardMaterial color="blue" side={2} />
-          </mesh>
-          <mesh rotation={[0, 0, 0]} position={[0, 1.25, 10]} receiveShadow>
-            <planeGeometry args={[20, 2.5]} />
-            <meshStandardMaterial color="blue" side={2} />
-          </mesh>
-          <mesh rotation={[0, 0, 0]} position={[0, 1.25, -10]} receiveShadow>
-            <planeGeometry args={[20, 2.5]} />
-            <meshStandardMaterial color="blue" side={2} />
-          </mesh>
-
-        </group>
-      </RigidBody>
+      <Box />
+      <OutOfBounds onOutOfBounds={handleOutOfBounds} />
     </Physics>
   )
 }
@@ -95,7 +117,7 @@ function SceneView() {
         <pointLight position={[-10, 15, -10]} intensity={50}/>
 
         <Suspense fallback={null}>
-          <ThrownBall />
+          <Playfield />
         </Suspense>
 
         <OrbitControls enablePan={false} />
@@ -124,24 +146,5 @@ const styles = StyleSheet.create({
   },
   canvas: {
     flex: 1,
-  },
-  loadingContainer: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: '#25292e',
-    zIndex: 10,
-  },
-  loadingText: {
-    color: '#fff',
-    marginTop: 10,
-  },
-  text: {
-    color: '#fff',
-    padding: 10,
   },
 });
