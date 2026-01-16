@@ -1,3 +1,4 @@
+import { RigidBody } from '@react-three/rapier';
 import React from 'react';
 
 // Helper to get dot positions for each number (standard dice pattern)
@@ -80,5 +81,13 @@ export function Die() {
         );
       })}
     </group>
+  );
+}
+
+export function RigidDie() {
+  return (
+    <RigidBody colliders="cuboid">
+      <Die />
+    </RigidBody>
   );
 }

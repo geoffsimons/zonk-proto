@@ -1,66 +1,14 @@
+import Box from '@/components/Box';
 import LoadingView from '@/components/LoadingView';
+import OutOfBounds from '@/components/OutOfBounds';
 import { OrbitControls, PerspectiveCamera } from '@react-three/drei/native';
 import { Canvas } from '@react-three/fiber/native';
 import type { RapierRigidBody } from '@react-three/rapier';
 import { Physics, RigidBody } from '@react-three/rapier';
-import React, { Suspense, useCallback, useEffect, useRef, useState } from 'react';
+import React, { Suspense, useEffect, useRef, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 
 const GRAVITY = -9.81;
-
-function OutOfBounds({ onOutOfBounds }: { onOutOfBounds: () => void }) {
-  const handleOutOfBounds = useCallback(() => {
-    onOutOfBounds();
-  }, [onOutOfBounds]);
-
-  return (
-    <RigidBody
-      type="fixed"
-      onCollisionEnter={handleOutOfBounds}
-    >
-      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.2, 0]} receiveShadow>
-        <planeGeometry args={[200, 200]} />
-        <meshStandardMaterial color="red" side={2} />
-      </mesh>
-    </RigidBody>
-  );
-}
-
-function Box() {
-  return (
-    <RigidBody
-      type="fixed"
-      restitution={0.9}
-      friction={0.5}
-    >
-      <group>
-        {/* Ground */}
-        <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0, 0]} receiveShadow>
-          <planeGeometry args={[20, 20]} />
-          <meshStandardMaterial color="green" side={2} />
-        </mesh>
-        {/* Wall */}
-        <mesh rotation={[0, Math.PI / 2, 0]} position={[10, 1.25, 0]} receiveShadow>
-          <planeGeometry args={[20, 2.5]} />
-          <meshStandardMaterial color="blue" side={2} />
-        </mesh>
-        <mesh rotation={[0, -Math.PI / 2, 0]} position={[-10, 1.25, 0]} receiveShadow>
-          <planeGeometry args={[20, 2.5]} />
-          <meshStandardMaterial color="blue" side={2} />
-        </mesh>
-        <mesh rotation={[0, 0, 0]} position={[0, 1.25, 10]} receiveShadow>
-          <planeGeometry args={[20, 2.5]} />
-          <meshStandardMaterial color="blue" side={2} />
-        </mesh>
-        <mesh rotation={[0, 0, 0]} position={[0, 1.25, -10]} receiveShadow>
-          <planeGeometry args={[20, 2.5]} />
-          <meshStandardMaterial color="blue" side={2} />
-        </mesh>
-
-      </group>
-    </RigidBody>
-  );
-}
 
 function Playfield() {
   const ballRef = useRef<RapierRigidBody>(null);

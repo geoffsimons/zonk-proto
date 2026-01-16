@@ -1,4 +1,4 @@
-import { Die } from '@/components/die';
+import { Die } from '@/components/Die';
 import { OrbitControls, PerspectiveCamera } from '@react-three/drei/native';
 import { Canvas, useFrame } from '@react-three/fiber/native';
 import React, { ComponentProps, Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react';
