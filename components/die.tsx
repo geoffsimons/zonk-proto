@@ -1,5 +1,5 @@
 import { RigidBody } from '@react-three/rapier';
-import React from 'react';
+import React, { useMemo } from 'react';
 
 // Helper to get dot positions for each number (standard dice pattern)
 function getDotsForNumber(number: number): Array<[number, number]> {
@@ -85,8 +85,34 @@ export function Die() {
 }
 
 export function RigidDie() {
+  // For testing, use random rotation.
+  const randomRotation = useMemo((): [number, number, number] => {
+    return [
+      Math.random() * 2 * Math.PI,
+      Math.random() * 2 * Math.PI,
+      Math.random() * 2 * Math.PI,
+    ] as [number, number, number];
+  }, []);
+
+  const randomAngularVelocity = useMemo((): [number, number, number] => {
+    return [
+      Math.random() * 2 * Math.PI,
+      Math.random() * 2 * Math.PI,
+      Math.random() * 2 * Math.PI,
+    ] as [number, number, number];
+  }, []);
+
   return (
-    <RigidBody colliders="cuboid">
+    <RigidBody
+      colliders="cuboid"
+      restitution={0.8}
+      linearDamping={0.5}
+      angularDamping={0.5}
+      rotation={randomRotation}
+      position={[-25, 10, 0]}
+      linearVelocity={[5, 0, 0]}
+      angularVelocity={randomAngularVelocity}
+    >
       <Die />
     </RigidBody>
   );

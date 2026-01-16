@@ -10,6 +10,25 @@ import { StyleSheet, View } from 'react-native';
 
 const GRAVITY = -9.81;
 
+function Ball({ id, ref, handleRest }: { id: string, ref: React.RefObject<RapierRigidBody | null>, handleRest: () => void }) {
+  return (
+    <RigidBody
+      ref={ref}
+      key={id}
+      colliders="ball"
+      position={[0, 10, 0]}
+      linearVelocity={[5, 0, 0]}
+      restitution={0.9}
+      onSleep={handleRest}
+    >
+      <mesh castShadow>
+        <sphereGeometry args={[1, 32, 32]} />
+        <meshStandardMaterial color="orange" />
+      </mesh>
+    </RigidBody>
+  );
+}
+
 function Playfield() {
   const ballRef = useRef<RapierRigidBody>(null);
 
@@ -24,20 +43,8 @@ function Playfield() {
 
   return (
     <Physics gravity={[0, GRAVITY, 0]}>
-      <RigidBody
-        ref={ballRef}
-        colliders="ball"
-        position={[0, 10, 0]}
-        linearVelocity={[5, 0, 0]}
-        restitution={0.9}
-        onSleep={handleRest}
-      >
-        <mesh castShadow>
-          <sphereGeometry args={[1, 32, 32]} />
-          <meshStandardMaterial color="orange" />
-        </mesh>
-      </RigidBody>
-
+      <Ball id="ball" ref={ballRef} handleRest={handleRest} />
+      {/* <RigidDie /> */}
       <Box />
       <OutOfBounds onOutOfBounds={handleOutOfBounds} />
     </Physics>
