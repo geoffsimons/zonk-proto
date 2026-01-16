@@ -30,7 +30,7 @@ function ThrownBall() {
         colliders="ball"
         position={[0, 10, 0]}
         // linearVelocity={[1, 0, 0]}
-        restitution={1}
+        restitution={0.8}
         onSleep={handleRest}
       >
         <mesh castShadow>
