@@ -29,7 +29,7 @@ function ThrownBall() {
         ref={ballRef}
         colliders="ball"
         position={[0, 10, 0]}
-        // linearVelocity={[1, 0, 0]}
+        linearVelocity={[1, 0, 0]}
         restitution={0.8}
         onSleep={handleRest}
       >
@@ -42,11 +42,33 @@ function ThrownBall() {
       <RigidBody
         type="fixed"
         restitution={1}
+        friction={0.5}
       >
-        <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0, 0]} receiveShadow>
-          <planeGeometry args={[20, 20]} />
-          <meshStandardMaterial color="green" side={2} />
-        </mesh>
+        <group>
+          {/* Ground */}
+          <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0, 0]} receiveShadow>
+            <planeGeometry args={[20, 20]} />
+            <meshStandardMaterial color="green" side={2} />
+          </mesh>
+          {/* Wall */}
+          <mesh rotation={[0, Math.PI / 2, 0]} position={[10, 1.25, 0]} receiveShadow>
+            <planeGeometry args={[20, 2.5]} />
+            <meshStandardMaterial color="blue" side={2} />
+          </mesh>
+          <mesh rotation={[0, -Math.PI / 2, 0]} position={[-10, 1.25, 0]} receiveShadow>
+            <planeGeometry args={[20, 2.5]} />
+            <meshStandardMaterial color="blue" side={2} />
+          </mesh>
+          <mesh rotation={[0, 0, 0]} position={[0, 1.25, 10]} receiveShadow>
+            <planeGeometry args={[20, 2.5]} />
+            <meshStandardMaterial color="blue" side={2} />
+          </mesh>
+          <mesh rotation={[0, 0, 0]} position={[0, 1.25, -10]} receiveShadow>
+            <planeGeometry args={[20, 2.5]} />
+            <meshStandardMaterial color="blue" side={2} />
+          </mesh>
+
+        </group>
       </RigidBody>
     </Physics>
   )
