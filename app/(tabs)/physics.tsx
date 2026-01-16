@@ -1,4 +1,4 @@
-import { PerspectiveCamera } from '@react-three/drei/native';
+import { OrbitControls, PerspectiveCamera } from '@react-three/drei/native';
 import { Canvas } from '@react-three/fiber/native';
 import React, { Suspense, useEffect, useState } from 'react';
 import { ActivityIndicator, Button, StyleSheet, Text, View } from 'react-native';
@@ -32,8 +32,8 @@ function BallView({ ball }: { ball: Ball }) {
 function Ground() {
   return (
     <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0, 0]}>
-      <planeGeometry args={[10, 10]} />
-      <meshStandardMaterial color="#999" />
+      <planeGeometry args={[20, 20]} />
+      <meshStandardMaterial color="green" side={2} />
     </mesh>
   );
 }
@@ -59,11 +59,12 @@ function SceneView({ ball }: { ball: Ball }) {
         <pointLight position={[-10, 10, -10]} intensity={50}/>
 
         <Suspense fallback={null}>
-          <Ground />
           <BallView ball={ball} />
+          <Ground />
         </Suspense>
 
-        <PerspectiveCamera makeDefault position={[0, 0, 10]} />
+        <OrbitControls enablePan={false} />
+        <PerspectiveCamera makeDefault position={[5, 5, 10]} />
       </Canvas>
     </View>
   )
