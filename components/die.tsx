@@ -1,5 +1,5 @@
-import { RigidBody } from '@react-three/rapier';
-import React, { useMemo } from 'react';
+import { RapierRigidBody, RigidBody } from '@react-three/rapier';
+import React, { useCallback, useRef } from 'react';
 
 // Helper to get dot positions for each number (standard dice pattern)
 function getDotsForNumber(number: number): Array<[number, number]> {
@@ -84,34 +84,101 @@ export function Die() {
   );
 }
 
-export function RigidDie() {
-  // For testing, use random rotation.
-  const randomRotation = useMemo((): [number, number, number] => {
-    return [
-      Math.random() * 2 * Math.PI,
-      Math.random() * 2 * Math.PI,
-      Math.random() * 2 * Math.PI,
-    ] as [number, number, number];
-  }, []);
+export function RigidDie({ onRest }: { onRest: (result: number) => void }) {
+  const dieRef = useRef<RapierRigidBody>(null);
 
-  const randomAngularVelocity = useMemo((): [number, number, number] => {
-    return [
-      Math.random() * 2 * Math.PI,
-      Math.random() * 2 * Math.PI,
-      Math.random() * 2 * Math.PI,
-    ] as [number, number, number];
-  }, []);
+  const handleSleep = useCallback(() => {
+    // Determine the result using the ref.
+    // We need to figure out which face is up.
+    // To determine which face is up, get the die's world quaternion,
+    // transform each face's normal, and check which is closest to world up.
+
+    const die = dieRef.current;
+    if (!die) return;
+
+    // Map die faces to normal vectors (in local space) and associated numbers.
+    // Order: +Z, -Z, +Y, -Y, +X, -X
+    // [normal vector, die number]
+    const faceNormals: [number[], number][] = [
+      [[0, 0, 1], 1],   // Front (+Z)
+      [[0, 0, -1], 6],  // Back (-Z)
+      [[0, 1, 0], 5],   // Top (+Y)
+      [[0, -1, 0], 2],  // Bottom (-Y)
+      [[1, 0, 0], 3],   // Right (+X)
+      [[-1, 0, 0], 4],  // Left (-X)
+    ];
+
+    // Get the world quaternion of the rigid body
+    const quat = die.rotation(); // {x, y, z, w}
+
+    // Convert quaternion to THREE.Quaternion and world up to vector
+    // create a helper so we don't depend on THREE at insertion
+    function applyQuat(q: { x: number, y: number, z: number, w: number }, v: [number, number, number]): [number, number, number] {
+      // Quaternion * vector math
+      const x = v[0], y = v[1], z = v[2];
+      const qx = q.x, qy = q.y, qz = q.z, qw = q.w;
+
+      // t = 2 * cross(q.xyz, v)
+      const tx = 2 * (qy * z - qz * y);
+      const ty = 2 * (qz * x - qx * z);
+      const tz = 2 * (qx * y - qy * x);
+
+      // v' = v + qw * t + cross(q.xyz, t)
+      const rx = x + qw * tx + (qy * tz - qz * ty);
+      const ry = y + qw * ty + (qz * tx - qx * tz);
+      const rz = z + qw * tz + (qx * ty - qy * tx);
+
+      return [rx, ry, rz];
+    }
+
+    // Compare each face's transformed normal against world up ([0, 1, 0])
+    let maxDot = -Infinity;
+    let resultNumber = 1;
+    for (const [normal, number] of faceNormals) {
+      const worldNormal = applyQuat(quat, normal as [number, number, number]);
+      // Normalize (not needed as all are 1, but do it for generality)
+      const len = Math.sqrt(worldNormal[0]**2 + worldNormal[1]**2 + worldNormal[2]**2);
+      const unitNormal = [worldNormal[0]/len, worldNormal[1]/len, worldNormal[2]/len];
+      // Dot with world up
+      const dot = unitNormal[1]; // world up = [0,1,0]
+      if (dot > maxDot) {
+        maxDot = dot;
+        resultNumber = number;
+      }
+    }
+
+    onRest(resultNumber);
+  }, [onRest, dieRef]);
+
+  // For testing, use random rotation.
+  // const randomRotation = useMemo((): [number, number, number] => {
+  //   return [
+  //     Math.random() * 2 * Math.PI,
+  //     Math.random() * 2 * Math.PI,
+  //     Math.random() * 2 * Math.PI,
+  //   ] as [number, number, number];
+  // }, []);
+
+  // const randomAngularVelocity = useMemo((): [number, number, number] => {
+  //   return [
+  //     Math.random() * 2 * Math.PI,
+  //     Math.random() * 2 * Math.PI,
+  //     Math.random() * 2 * Math.PI,
+  //   ] as [number, number, number];
+  // }, []);
 
   return (
     <RigidBody
+      ref={dieRef}
       colliders="cuboid"
       restitution={0.8}
       linearDamping={0.5}
       angularDamping={0.5}
-      rotation={randomRotation}
-      position={[-25, 10, 0]}
+      // rotation={randomRotation}
+      position={[-9, 10, 0]}
       linearVelocity={[5, 0, 0]}
-      angularVelocity={randomAngularVelocity}
+      // angularVelocity={randomAngularVelocity}
+      onSleep={handleSleep}
     >
       <Die />
     </RigidBody>

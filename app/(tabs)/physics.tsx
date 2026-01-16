@@ -1,4 +1,5 @@
 import Box from '@/components/Box';
+import { RigidDie } from '@/components/Die';
 import LoadingView from '@/components/LoadingView';
 import OutOfBounds from '@/components/OutOfBounds';
 import { OrbitControls, PerspectiveCamera } from '@react-three/drei/native';
@@ -41,10 +42,14 @@ function Playfield() {
     ballRef.current?.sleep();
   };
 
+  const handleDieRest = (result: number) => {
+    console.log('Rest', result);
+  };
+
   return (
     <Physics gravity={[0, GRAVITY, 0]}>
-      <Ball id="ball" ref={ballRef} handleRest={handleRest} />
-      {/* <RigidDie /> */}
+      {/* <Ball id="ball" ref={ballRef} handleRest={handleRest} /> */}
+      <RigidDie onRest={handleDieRest} />
       <Box />
       <OutOfBounds onOutOfBounds={handleOutOfBounds} />
     </Physics>
