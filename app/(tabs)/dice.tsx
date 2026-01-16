@@ -99,7 +99,7 @@ function calculateCameraPositionFromAngles([x, y, z]: [number, number, number], 
   return [newX, newY, newZ];
 }
 
-export default function Index() {
+export default function DicePage() {
   const initialCameraPosition: [number, number, number] = [3, 3, 5];
 
   // Calculate initial angles from position
