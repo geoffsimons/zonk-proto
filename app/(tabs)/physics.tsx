@@ -54,9 +54,9 @@ function SceneView({ ball }: { ball: Ball }) {
       {!isCanvasReady && <LoadingView />}
       <Canvas style={styles.canvas}>
         <ambientLight intensity={0.1} />
-        <pointLight position={[10, 10, 10]} intensity={50}/>
-        <pointLight position={[-10, 10, 10]} intensity={50}/>
-        <pointLight position={[-10, 10, -10]} intensity={50}/>
+        <pointLight position={[10, 15, 10]} intensity={50}/>
+        <pointLight position={[-10, 15, 10]} intensity={50}/>
+        <pointLight position={[-10, 15, -10]} intensity={50}/>
 
         <Suspense fallback={null}>
           <BallView ball={ball} />
@@ -64,7 +64,7 @@ function SceneView({ ball }: { ball: Ball }) {
         </Suspense>
 
         <OrbitControls enablePan={false} />
-        <PerspectiveCamera makeDefault position={[5, 5, 10]} />
+        <PerspectiveCamera makeDefault position={[0, 20, 20]} />
       </Canvas>
     </View>
   )
@@ -72,7 +72,7 @@ function SceneView({ ball }: { ball: Ball }) {
 
 const createInitialBall = (): Ball => {
   return {
-    position: { x: 0, y: 0, z: 0 },
+    position: { x: 0, y: 10, z: 0 },
     velocity: { x: 0, y: 0, z: 0 },
     radius: 1,
     mass: 1,
