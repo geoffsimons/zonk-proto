@@ -1,7 +1,9 @@
 import { OrbitControls, PerspectiveCamera } from '@react-three/drei/native';
 import { Canvas } from '@react-three/fiber/native';
-import React, { Suspense, useEffect, useState } from 'react';
-import { ActivityIndicator, Button, StyleSheet, Text, View } from 'react-native';
+import type { RapierRigidBody } from '@react-three/rapier';
+import { Physics, RigidBody } from '@react-three/rapier';
+import React, { Suspense, useEffect, useRef, useState } from 'react';
+import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
 
 function LoadingView() {
   return (
@@ -12,33 +14,45 @@ function LoadingView() {
   )
 }
 
-interface Ball {
-  position: { x: number; y: number; z: number };
-  velocity: { x: number; y: number; z: number };
-  radius: number;
-  mass: number;
-}
+const GRAVITY = -9.81;
 
-function BallView({ ball }: { ball: Ball }) {
+function ThrownBall() {
+  const ballRef = useRef<RapierRigidBody>(null);
+
+  const handleRest = () => {
+    console.log('Rest');
+  };
+
   return (
-    <mesh position={[ball.position.x, ball.position.y, ball.position.z]}>
-      <sphereGeometry args={[ball.radius, 32, 32]} />
-      <meshStandardMaterial color="red" />
-    </mesh>
+    <Physics gravity={[0, GRAVITY, 0]}>
+      <RigidBody
+        ref={ballRef}
+        colliders="ball"
+        position={[0, 10, 0]}
+        // linearVelocity={[1, 0, 0]}
+        restitution={1}
+        onSleep={handleRest}
+      >
+        <mesh castShadow>
+          <sphereGeometry args={[1, 32, 32]} />
+          <meshStandardMaterial color="orange" />
+        </mesh>
+      </RigidBody>
+
+      <RigidBody
+        type="fixed"
+        restitution={1}
+      >
+        <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0, 0]} receiveShadow>
+          <planeGeometry args={[20, 20]} />
+          <meshStandardMaterial color="green" side={2} />
+        </mesh>
+      </RigidBody>
+    </Physics>
   )
 }
 
-// The Ground Plane
-function Ground() {
-  return (
-    <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0, 0]}>
-      <planeGeometry args={[20, 20]} />
-      <meshStandardMaterial color="green" side={2} />
-    </mesh>
-  );
-}
-
-function SceneView({ ball }: { ball: Ball }) {
+function SceneView() {
   const [isCanvasReady, setIsCanvasReady] = useState(false);
 
   useEffect(() => {
@@ -59,8 +73,7 @@ function SceneView({ ball }: { ball: Ball }) {
         <pointLight position={[-10, 15, -10]} intensity={50}/>
 
         <Suspense fallback={null}>
-          <BallView ball={ball} />
-          <Ground />
+          <ThrownBall />
         </Suspense>
 
         <OrbitControls enablePan={false} />
@@ -70,40 +83,10 @@ function SceneView({ ball }: { ball: Ball }) {
   )
 }
 
-const createInitialBall = (): Ball => {
-  return {
-    position: { x: 0, y: 10, z: 0 },
-    velocity: { x: 0, y: 0, z: 0 },
-    radius: 1,
-    mass: 1,
-  };
-};
-
 export default function PhysicsPage() {
-  const [isRunning, setIsRunning] = useState(false);
-
-  const [ball, setBall] = useState<Ball>(createInitialBall());
-
-  const resetBall = () => {
-    setBall(createInitialBall());
-  };
-
-  const startSimulation = () => {
-    setIsRunning(true);
-  };
-
-  const stopSimulation = () => {
-    setIsRunning(false);
-  };
-
   return (
     <View style={styles.container}>
-      <SceneView ball={ball} />
-      <View style={styles.controls}>
-        <Button title="Reset" onPress={resetBall} />
-        <Button title="Start" onPress={startSimulation} />
-        <Button title="Stop" onPress={stopSimulation} />
-      </View>
+      <SceneView />
     </View>
   );
 }
@@ -119,14 +102,6 @@ const styles = StyleSheet.create({
   },
   canvas: {
     flex: 1,
-  },
-  controls: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 20,
-    padding: 10,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
   },
   loadingContainer: {
     position: 'absolute',
