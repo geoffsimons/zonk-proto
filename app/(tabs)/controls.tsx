@@ -59,9 +59,15 @@ function AccuracyControl({ onAccuracyChange, timeToFull }: { onAccuracyChange: (
   }, [onAccuracyChange]);
 
   const stepAccuracy = useCallback((currentTime: number) => {
+    // Double-check running state at the very start
     if (!isRunningRef.current) return;
 
     setAccuracy((prevAccuracy) => {
+      // Triple-check running state before updating (in case stop was called during this frame)
+      if (!isRunningRef.current) {
+        return prevAccuracy; // Don't update if stopped
+      }
+
       const deltaAccuracy = (currentTime - lastTimeRef.current) / timeToFull;
       lastTimeRef.current = currentTime;
 
@@ -81,9 +87,11 @@ function AccuracyControl({ onAccuracyChange, timeToFull }: { onAccuracyChange: (
       return newAccuracy;
     });
 
-    // Schedule next frame
-    animationFrameRef.current = requestAnimationFrame(stepAccuracy);
-  }, [handleAccuracyChange]);
+    // Only schedule next frame if still running
+    if (isRunningRef.current) {
+      animationFrameRef.current = requestAnimationFrame(stepAccuracy);
+    }
+  }, [handleAccuracyChange, timeToFull]);
 
   const startAccuracy = useCallback(() => {
     console.log('Starting accuracy');
@@ -97,12 +105,15 @@ function AccuracyControl({ onAccuracyChange, timeToFull }: { onAccuracyChange: (
 
   const stopAccuracy = useCallback(() => {
     console.log('Stopping accuracy');
+    // Set running flag FIRST to prevent any pending frames from updating
     isRunningRef.current = false;
-    setIsAccuracyRunning(false);
+    // Cancel any pending animation frame immediately
     if (animationFrameRef.current !== null) {
       cancelAnimationFrame(animationFrameRef.current);
       animationFrameRef.current = null;
     }
+    // Update UI state
+    setIsAccuracyRunning(false);
   }, []);
 
   // Cleanup on unmount
@@ -170,12 +181,12 @@ const styles = StyleSheet.create({
   },
   accuracyMeterBar: {
     width: '100%',
-    height: 10,
+    height: 20,
     backgroundColor: '#fff',
   },
   accuracyMeterBarInner: {
     width: '100%',
-    height: 10,
+    height: 20,
     backgroundColor: 'red',
   },
   container: {
