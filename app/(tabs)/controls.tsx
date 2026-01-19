@@ -40,7 +40,13 @@ function AccuracyMeter({ accuracy }: { accuracy: number }) {
   );
 }
 
-function AccuracyControl({ onAccuracyChange }: { onAccuracyChange: (accuracy: number) => void }) {
+/**
+ *
+ * @param onAccuracyChange - The callback to update the accuracy
+ * @param timeToFull - The time it takes to go from 0 to 1 in milliseconds
+ * @returns
+ */
+function AccuracyControl({ onAccuracyChange, timeToFull }: { onAccuracyChange: (accuracy: number) => void, timeToFull: number }) {
   const [accuracy, setAccuracy] = useState(0.0);
   const [isAccuracyRunning, setIsAccuracyRunning] = useState(false);
   const directionRef = useRef<number>(1); // 1 for increasing, -1 for decreasing
@@ -55,18 +61,11 @@ function AccuracyControl({ onAccuracyChange }: { onAccuracyChange: (accuracy: nu
   const stepAccuracy = useCallback((currentTime: number) => {
     if (!isRunningRef.current) return;
 
-    // Calculate delta time for smooth animation (target 60fps)
-    const deltaTime = currentTime - lastTimeRef.current;
-    lastTimeRef.current = currentTime;
-
-    // Use a reasonable step size per frame (adjust speed here)
-    // 0.5 means it takes ~2 seconds to go from 0 to 1 at 60fps
-    const stepSize = 0.008; // Adjust this to control speed
-
     setAccuracy((prevAccuracy) => {
-      // Calculate new value
-      let newAccuracy = prevAccuracy + (directionRef.current * stepSize);
+      const deltaAccuracy = (currentTime - lastTimeRef.current) / timeToFull;
+      lastTimeRef.current = currentTime;
 
+      let newAccuracy = prevAccuracy + (directionRef.current * deltaAccuracy);
       // Clamp to bounds
       if (newAccuracy >= 1.0) {
         newAccuracy = 1.0;
@@ -144,7 +143,7 @@ function ControlPanel({ initialPower, onPowerChange, onAccuracyChange }: { initi
   return (
     <View style={styles.controlPanel}>
       <PowerControl initialPower={initialPower} onPowerChange={onPowerChange} />
-      <AccuracyControl onAccuracyChange={onAccuracyChange} />
+      <AccuracyControl onAccuracyChange={onAccuracyChange} timeToFull={500} />
     </View>
   );
 }
