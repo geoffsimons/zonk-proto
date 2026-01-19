@@ -150,6 +150,10 @@ export function RigidDie({ onRest }: { onRest: (result: number) => void }) {
     onRest(resultNumber);
   }, [onRest, dieRef]);
 
+  const handleWake = useCallback(() => {
+    console.log('Wake');
+  }, []);
+
   // For testing, use random rotation.
   // const randomRotation = useMemo((): [number, number, number] => {
   //   return [
@@ -179,6 +183,7 @@ export function RigidDie({ onRest }: { onRest: (result: number) => void }) {
       linearVelocity={[5, 0, 0]}
       // angularVelocity={randomAngularVelocity}
       onSleep={handleSleep}
+      onWake={handleWake}
     >
       <Die />
     </RigidBody>

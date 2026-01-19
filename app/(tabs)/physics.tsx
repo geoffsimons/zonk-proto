@@ -5,37 +5,14 @@ import OutOfBounds from '@/components/OutOfBounds';
 import { OrbitControls, PerspectiveCamera } from '@react-three/drei/native';
 import { Canvas } from '@react-three/fiber/native';
 import type { RapierRigidBody } from '@react-three/rapier';
-import { Physics, RigidBody } from '@react-three/rapier';
+import { Physics } from '@react-three/rapier';
 import React, { Suspense, useEffect, useRef, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 
 const GRAVITY = -9.81;
 
-function Ball({ id, ref, handleRest }: { id: string, ref: React.RefObject<RapierRigidBody | null>, handleRest: () => void }) {
-  return (
-    <RigidBody
-      ref={ref}
-      key={id}
-      colliders="ball"
-      position={[0, 10, 0]}
-      linearVelocity={[5, 0, 0]}
-      restitution={0.9}
-      onSleep={handleRest}
-    >
-      <mesh castShadow>
-        <sphereGeometry args={[1, 32, 32]} />
-        <meshStandardMaterial color="orange" />
-      </mesh>
-    </RigidBody>
-  );
-}
-
 function Playfield() {
   const ballRef = useRef<RapierRigidBody>(null);
-
-  const handleRest = () => {
-    console.log('Rest');
-  };
 
   const handleOutOfBounds = () => {
     console.log('Spaz!');
