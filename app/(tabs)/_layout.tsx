@@ -34,6 +34,12 @@ export default function TabLayout() {
           <Ionicons name="analytics" color={focused ? color : '#888'} size={24} />
         ) }}
         />
+      <Tabs.Screen
+        name="controls"
+        options={{ title: 'Controls', tabBarIcon: ({ color, focused }) => (
+          <Ionicons name="settings" color={focused ? color : '#888'} size={24} />
+        ) }}
+        />
     </Tabs>
   );
 }

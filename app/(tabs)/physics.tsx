@@ -4,19 +4,15 @@ import LoadingView from '@/components/LoadingView';
 import OutOfBounds from '@/components/OutOfBounds';
 import { OrbitControls, PerspectiveCamera } from '@react-three/drei/native';
 import { Canvas } from '@react-three/fiber/native';
-import type { RapierRigidBody } from '@react-three/rapier';
 import { Physics } from '@react-three/rapier';
-import React, { Suspense, useEffect, useRef, useState } from 'react';
+import React, { Suspense, useEffect, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 
 const GRAVITY = -9.81;
 
 function Playfield() {
-  const ballRef = useRef<RapierRigidBody>(null);
-
   const handleOutOfBounds = () => {
     console.log('Spaz!');
-    ballRef.current?.sleep();
   };
 
   const handleDieRest = (result: number) => {
@@ -25,7 +21,6 @@ function Playfield() {
 
   return (
     <Physics gravity={[0, GRAVITY, 0]}>
-      {/* <Ball id="ball" ref={ballRef} handleRest={handleRest} /> */}
       <RigidDie onRest={handleDieRest} />
       <Box />
       <OutOfBounds onOutOfBounds={handleOutOfBounds} />
