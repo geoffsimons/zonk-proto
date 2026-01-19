@@ -3,7 +3,7 @@
  * It will allow the user to control the die and see the results.
  */
 
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { Button, StyleSheet, Text, View } from 'react-native';
 
 import Slider from '@react-native-community/slider';
@@ -43,37 +43,77 @@ function AccuracyMeter({ accuracy }: { accuracy: number }) {
 function AccuracyControl({ onAccuracyChange }: { onAccuracyChange: (accuracy: number) => void }) {
   const [accuracy, setAccuracy] = useState(0.0);
   const [isAccuracyRunning, setIsAccuracyRunning] = useState(false);
-  const [isAccuracyIncreasing, setIsAccuracyIncreasing] = useState(true);
+  const directionRef = useRef<number>(1); // 1 for increasing, -1 for decreasing
+  const animationFrameRef = useRef<number | null>(null);
+  const lastTimeRef = useRef<number>(0);
+  const isRunningRef = useRef<boolean>(false); // Use ref to track running state for animation loop
 
-  const handleAccuracyChange = useCallback((accuracy: number) => {
-    onAccuracyChange(accuracy);
+  const handleAccuracyChange = useCallback((newAccuracy: number) => {
+    onAccuracyChange(newAccuracy);
   }, [onAccuracyChange]);
 
-  const stepAccuracy = useCallback(() => {
-    setAccuracy(isAccuracyIncreasing ? accuracy + 0.1 : accuracy - 0.1);
-    handleAccuracyChange(accuracy);
-    if (accuracy >= 1.0) {
-      setIsAccuracyIncreasing(false);
-    } else if (accuracy <= 0.0) {
-      setIsAccuracyIncreasing(true);
-    }
-  }, [accuracy, isAccuracyIncreasing]);
+  const stepAccuracy = useCallback((currentTime: number) => {
+    if (!isRunningRef.current) return;
+
+    // Calculate delta time for smooth animation (target 60fps)
+    const deltaTime = currentTime - lastTimeRef.current;
+    lastTimeRef.current = currentTime;
+
+    // Use a reasonable step size per frame (adjust speed here)
+    // 0.5 means it takes ~2 seconds to go from 0 to 1 at 60fps
+    const stepSize = 0.008; // Adjust this to control speed
+
+    setAccuracy((prevAccuracy) => {
+      // Calculate new value
+      let newAccuracy = prevAccuracy + (directionRef.current * stepSize);
+
+      // Clamp to bounds
+      if (newAccuracy >= 1.0) {
+        newAccuracy = 1.0;
+        directionRef.current = -1;
+      } else if (newAccuracy <= 0.0) {
+        newAccuracy = 0.0;
+        directionRef.current = 1;
+      }
+
+      // Update parent callback with new value
+      handleAccuracyChange(newAccuracy);
+
+      return newAccuracy;
+    });
+
+    // Schedule next frame
+    animationFrameRef.current = requestAnimationFrame(stepAccuracy);
+  }, [handleAccuracyChange]);
 
   const startAccuracy = useCallback(() => {
+    console.log('Starting accuracy');
     setAccuracy(0.0);
+    isRunningRef.current = true;
     setIsAccuracyRunning(true);
-  }, []);
+    directionRef.current = 1;
+    lastTimeRef.current = performance.now();
+    animationFrameRef.current = requestAnimationFrame(stepAccuracy);
+  }, [stepAccuracy]);
 
   const stopAccuracy = useCallback(() => {
+    console.log('Stopping accuracy');
+    isRunningRef.current = false;
     setIsAccuracyRunning(false);
+    if (animationFrameRef.current !== null) {
+      cancelAnimationFrame(animationFrameRef.current);
+      animationFrameRef.current = null;
+    }
   }, []);
 
+  // Cleanup on unmount
   useEffect(() => {
-    if (isAccuracyRunning) {
-      const interval = setInterval(stepAccuracy, 50);
-      return () => clearInterval(interval);
-    }
-  }, [isAccuracyRunning, stepAccuracy]);
+    return () => {
+      if (animationFrameRef.current !== null) {
+        cancelAnimationFrame(animationFrameRef.current);
+      }
+    };
+  }, []);
 
   return (
     <View style={styles.accuracyControl}>
