@@ -34,8 +34,8 @@ function PowerControl({ initialPower, onPowerChange }: { initialPower: number, o
 
 function AccuracyMeter({ accuracy }: { accuracy: number }) {
   return (
-    <View style={styles.accuracyMeterBar}>
-      <View style={[styles.accuracyMeterBarInner, { width: `${accuracy * 100}%` }]} />
+    <View style={styles.accuracyMeterBarBackground}>
+      <View style={[styles.accuracyMeterBarCover, { width: `${100 - accuracy * 100}%` }]} />
     </View>
   );
 }
@@ -179,15 +179,16 @@ const styles = StyleSheet.create({
   accuracyLabel: {
     color: '#fff',
   },
-  accuracyMeterBar: {
+  accuracyMeterBarBackground: {
+    width: '100%',
+    height: 20,
+    backgroundImage: 'linear-gradient(to right, #0000FF, #00FF00, #FF0000)',
+  },
+  accuracyMeterBarCover: {
     width: '100%',
     height: 20,
     backgroundColor: '#fff',
-  },
-  accuracyMeterBarInner: {
-    width: '100%',
-    height: 20,
-    backgroundColor: 'red',
+    alignSelf: 'flex-end',
   },
   container: {
     flex: 1,
