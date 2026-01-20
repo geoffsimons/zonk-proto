@@ -35,8 +35,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 10,
     gap: 10,
-    borderWidth: 1,
-    borderColor: 'red',
   },
   powerLabel: {
     color: '#fff',
