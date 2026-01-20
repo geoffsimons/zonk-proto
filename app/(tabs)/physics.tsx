@@ -2,6 +2,7 @@ import Box from '@/components/Box';
 import { RigidDie } from '@/components/Die';
 import LoadingView from '@/components/LoadingView';
 import OutOfBounds from '@/components/OutOfBounds';
+import { calculateCameraPositionFromAngles } from '@/lib/math';
 import type { OrbitControlsChangeEvent } from '@react-three/drei/core';
 import { OrbitControls, PerspectiveCamera } from '@react-three/drei/native';
 import { Canvas } from '@react-three/fiber/native';
@@ -113,24 +114,6 @@ function calculateInitialVelocity(power: number, accuracy: number, origin: [numb
 }
 
 const INITIAL_CAMERA_POSITION = [0, 20, 20] as [number, number, number];
-
-function calculateCameraPositionFromAngles(initialPosition: [number, number, number], azimuth: number, polar: number): [number, number, number] {
-  // Calculate the radius (distance from origin) from the initial position
-  const radius = Math.sqrt(initialPosition[0]**2 + initialPosition[1]**2 + initialPosition[2]**2);
-
-  // In OrbitControls convention (matching calculateAnglesFromPosition in dice.tsx):
-  // - azimuth: horizontal angle in XZ plane, calculated as atan2(x, z)
-  // - polar: vertical angle from +Y axis, calculated as acos(y / radius)
-  //
-  // To convert back from spherical to Cartesian:
-  // If azimuth = atan2(x, z), then: x = r * sin(polar) * sin(azimuth), z = r * sin(polar) * cos(azimuth)
-  // If polar = acos(y / radius), then: y = r * cos(polar)
-  const newX = radius * Math.sin(polar) * Math.sin(azimuth);
-  const newY = radius * Math.cos(polar);
-  const newZ = radius * Math.sin(polar) * Math.cos(azimuth);
-
-  return [newX, newY, newZ];
-}
 
 function SceneView() {
   const [origin, setOrigin] = useState<[number, number, number]>(INITIAL_CAMERA_POSITION);

@@ -1,4 +1,5 @@
 import { Die } from '@/components/Die';
+import { calculateAnglesFromPosition, calculateCameraPositionFromAngles } from '@/lib/math';
 import { OrbitControls, PerspectiveCamera } from '@react-three/drei/native';
 import { Canvas, useFrame } from '@react-three/fiber/native';
 import React, { ComponentProps, Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -63,40 +64,6 @@ function AnimatedDieGroup() {
       </group>
     </group>
   );
-}
-
-// Helper function to calculate initial angles from camera position
-// This converts Cartesian coordinates [x, y, z] to spherical coordinates
-// matching OrbitControls' convention
-function calculateAnglesFromPosition([x, y, z]: [number, number, number]): {
-  azimuthal: number;
-  polar: number;
-} {
-  // Calculate distance from origin
-  const radius = Math.sqrt(x * x + y * y + z * z);
-
-  // Azimuthal angle: horizontal rotation in XZ plane (atan2(x, z))
-  const azimuthal = Math.atan2(x, z);
-
-  // Polar angle: vertical angle from Y axis (acos(y / radius))
-  const polar = Math.acos(y / radius);
-
-  return { azimuthal, polar };
-}
-
-/**
- *
- * @param initialCameraPosition [x, y, z]
- * @param azimuthal
- * @param polar
- * @returns
- */
-function calculateCameraPositionFromAngles([x, y, z]: [number, number, number], azimuthal: number, polar: number): [number, number, number] {
-  const radius = Math.sqrt(x * x + y * y + z * z);
-  const newX = radius * Math.sin(polar) * Math.cos(azimuthal);
-  const newY = radius * Math.sin(polar) * Math.sin(azimuthal);
-  const newZ = radius * Math.cos(polar);
-  return [newX, newY, newZ];
 }
 
 export default function DicePage() {
