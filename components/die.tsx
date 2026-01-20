@@ -84,18 +84,7 @@ export function Die() {
   );
 }
 
-export function RigidDie({ onRest }: { onRest: (result: number) => void }) {
-  const dieRef = useRef<RapierRigidBody>(null);
-
-  const handleSleep = useCallback(() => {
-    // Determine the result using the ref.
-    // We need to figure out which face is up.
-    // To determine which face is up, get the die's world quaternion,
-    // transform each face's normal, and check which is closest to world up.
-
-    const die = dieRef.current;
-    if (!die) return;
-
+function calculateResult(quat: { x: number, y: number, z: number, w: number }): number {
     // Map die faces to normal vectors (in local space) and associated numbers.
     // Order: +Z, -Z, +Y, -Y, +X, -X
     // [normal vector, die number]
@@ -107,9 +96,6 @@ export function RigidDie({ onRest }: { onRest: (result: number) => void }) {
       [[1, 0, 0], 3],   // Right (+X)
       [[-1, 0, 0], 4],  // Left (-X)
     ];
-
-    // Get the world quaternion of the rigid body
-    const quat = die.rotation(); // {x, y, z, w}
 
     // Convert quaternion to THREE.Quaternion and world up to vector
     // create a helper so we don't depend on THREE at insertion
@@ -147,41 +133,70 @@ export function RigidDie({ onRest }: { onRest: (result: number) => void }) {
       }
     }
 
-    onRest(resultNumber);
-  }, [onRest, dieRef]);
+    return resultNumber;
+}
+
+export function RigidDie({ id, origin, initialVelocity, onRest }: { id: string, origin: [number, number, number], initialVelocity: [number, number, number], onRest: (id: string, result: number) => void }) {
+  const dieRef = useRef<RapierRigidBody>(null);
+
+  const handleSleep = useCallback(() => {
+    const die = dieRef.current;
+    if (!die) return;
+
+    onRest(id, calculateResult(die.rotation()));
+  }, [onRest, dieRef, id]);
 
   const handleWake = useCallback(() => {
     console.log('Wake');
   }, []);
 
-  // For testing, use random rotation.
-  // const randomRotation = useMemo((): [number, number, number] => {
-  //   return [
-  //     Math.random() * 2 * Math.PI,
-  //     Math.random() * 2 * Math.PI,
-  //     Math.random() * 2 * Math.PI,
-  //   ] as [number, number, number];
-  // }, []);
+  // useEffect(() => {
+  //   if (dieRef.current) {
+  //     // Apply the impulse once on mount
+  //     dieRef.current.applyImpulse({
+  //       x: initialVelocity[0],
+  //       y: initialVelocity[1],
+  //       z: initialVelocity[2]
+  //     }, true);
 
-  // const randomAngularVelocity = useMemo((): [number, number, number] => {
-  //   return [
-  //     Math.random() * 2 * Math.PI,
-  //     Math.random() * 2 * Math.PI,
-  //     Math.random() * 2 * Math.PI,
-  //   ] as [number, number, number];
-  // }, []);
+  //     // dieRef.current.applyTorqueImpulse({
+  //     //   x: angularVelocity[0],
+  //     //   y: angularVelocity[1],
+  //     //   z: angularVelocity[2]
+  //     // }, true);
+  //   }
+  // }, []); // Empty dependency array so it only runs once
+
+  // Store angular velocity in state so it's stable per die instance
+  // const [angularVelocity] = useState<[number, number, number]>(() => [
+  //   Math.random() * 10,
+  //   Math.random() * 10,
+  //   Math.random() * 10,
+  // ]);
+
+  // const hasThrown = useRef(false);
+
+  // useFrame(() => {
+  //   if (dieRef.current && !hasThrown.current) {
+  //     hasThrown.current = true;
+  //     dieRef.current.applyImpulse({ x: initialVelocity[0], y: initialVelocity[1], z: initialVelocity[2] }, true);
+  //     dieRef.current.applyTorqueImpulse({ x: angularVelocity[0], y: angularVelocity[1], z: angularVelocity[2] }, true);
+  //   }
+  // });
+
+  // console.log('RigidDie', id, origin, initialVelocity);
 
   return (
     <RigidBody
       ref={dieRef}
+      key={id}
       colliders="cuboid"
       restitution={0.8}
       linearDamping={0.5}
       angularDamping={0.5}
-      // rotation={randomRotation}
-      position={[-9, 10, 0]}
-      linearVelocity={[5, 0, 0]}
-      // angularVelocity={randomAngularVelocity}
+      // linearVelocity={initialVelocity}
+      // angularVelocity={angularVelocity}
+      position={origin}
       onSleep={handleSleep}
       onWake={handleWake}
     >
