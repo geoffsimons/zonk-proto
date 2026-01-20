@@ -24,12 +24,24 @@ function InfoPanel({ accuracy, power }: { accuracy: number, power: number }) {
   );
 }
 
+const MIN_TIME_TO_FULL = 250;
+const MAX_TIME_TO_FULL = 2000;
+
+const TIME_TO_FULL_RANGE = MAX_TIME_TO_FULL - MIN_TIME_TO_FULL;
+
 function ControlPanel({ initialPower, onPowerChange, onAccuracyChange }: { initialPower: number, onPowerChange: (power: number) => void, onAccuracyChange: (accuracy: number) => void }) {
+
+  const [timeToFull, setTimeToFull] = useState(MIN_TIME_TO_FULL);
+
+  const handlePowerChange = (value: number) => {
+    onPowerChange(value);
+    setTimeToFull(MAX_TIME_TO_FULL - (TIME_TO_FULL_RANGE * value / 100));
+  };
 
   return (
     <View style={styles.controlPanel}>
-      <PowerControl initialPower={initialPower} onPowerChange={onPowerChange} />
-      <AccuracyControl onAccuracyChange={onAccuracyChange} timeToFull={500} />
+      <PowerControl initialPower={initialPower} onPowerChange={handlePowerChange} />
+      <AccuracyControl onAccuracyChange={onAccuracyChange} timeToFull={timeToFull} />
     </View>
   );
 }

@@ -11,6 +11,7 @@ import AccuracyMeter from "@/components/AccuracyMeter";
  * @returns
  */
 export default function AccuracyControl({ onAccuracyChange, timeToFull }: { onAccuracyChange: (accuracy: number) => void, timeToFull: number }) {
+  console.log('timeToFull', timeToFull);
   const [accuracy, setAccuracy] = useState(0.0);
   const [isAccuracyRunning, setIsAccuracyRunning] = useState(false);
   const directionRef = useRef<number>(1); // 1 for increasing, -1 for decreasing
