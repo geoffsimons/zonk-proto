@@ -1,3 +1,4 @@
+import { calculateDieValue } from '@/lib/math';
 import { RapierRigidBody, RigidBody } from '@react-three/rapier';
 import React, { useCallback, useRef } from 'react';
 
@@ -84,58 +85,6 @@ export function Die() {
   );
 }
 
-function calculateResult(quat: { x: number, y: number, z: number, w: number }): number {
-    // Map die faces to normal vectors (in local space) and associated numbers.
-    // Order: +Z, -Z, +Y, -Y, +X, -X
-    // [normal vector, die number]
-    const faceNormals: [number[], number][] = [
-      [[0, 0, 1], 1],   // Front (+Z)
-      [[0, 0, -1], 6],  // Back (-Z)
-      [[0, 1, 0], 5],   // Top (+Y)
-      [[0, -1, 0], 2],  // Bottom (-Y)
-      [[1, 0, 0], 3],   // Right (+X)
-      [[-1, 0, 0], 4],  // Left (-X)
-    ];
-
-    // Convert quaternion to THREE.Quaternion and world up to vector
-    // create a helper so we don't depend on THREE at insertion
-    function applyQuat(q: { x: number, y: number, z: number, w: number }, v: [number, number, number]): [number, number, number] {
-      // Quaternion * vector math
-      const x = v[0], y = v[1], z = v[2];
-      const qx = q.x, qy = q.y, qz = q.z, qw = q.w;
-
-      // t = 2 * cross(q.xyz, v)
-      const tx = 2 * (qy * z - qz * y);
-      const ty = 2 * (qz * x - qx * z);
-      const tz = 2 * (qx * y - qy * x);
-
-      // v' = v + qw * t + cross(q.xyz, t)
-      const rx = x + qw * tx + (qy * tz - qz * ty);
-      const ry = y + qw * ty + (qz * tx - qx * tz);
-      const rz = z + qw * tz + (qx * ty - qy * tx);
-
-      return [rx, ry, rz];
-    }
-
-    // Compare each face's transformed normal against world up ([0, 1, 0])
-    let maxDot = -Infinity;
-    let resultNumber = 1;
-    for (const [normal, number] of faceNormals) {
-      const worldNormal = applyQuat(quat, normal as [number, number, number]);
-      // Normalize (not needed as all are 1, but do it for generality)
-      const len = Math.sqrt(worldNormal[0]**2 + worldNormal[1]**2 + worldNormal[2]**2);
-      const unitNormal = [worldNormal[0]/len, worldNormal[1]/len, worldNormal[2]/len];
-      // Dot with world up
-      const dot = unitNormal[1]; // world up = [0,1,0]
-      if (dot > maxDot) {
-        maxDot = dot;
-        resultNumber = number;
-      }
-    }
-
-    return resultNumber;
-}
-
 export function RigidDie({ id, origin, initialVelocity, onRest }: { id: string, origin: [number, number, number], initialVelocity: [number, number, number], onRest: (id: string, result: number) => void }) {
   const dieRef = useRef<RapierRigidBody>(null);
 
@@ -143,48 +92,12 @@ export function RigidDie({ id, origin, initialVelocity, onRest }: { id: string, 
     const die = dieRef.current;
     if (!die) return;
 
-    onRest(id, calculateResult(die.rotation()));
+    onRest(id, calculateDieValue(die.rotation()));
   }, [onRest, dieRef, id]);
 
   const handleWake = useCallback(() => {
     console.log('Wake');
   }, []);
-
-  // useEffect(() => {
-  //   if (dieRef.current) {
-  //     // Apply the impulse once on mount
-  //     dieRef.current.applyImpulse({
-  //       x: initialVelocity[0],
-  //       y: initialVelocity[1],
-  //       z: initialVelocity[2]
-  //     }, true);
-
-  //     // dieRef.current.applyTorqueImpulse({
-  //     //   x: angularVelocity[0],
-  //     //   y: angularVelocity[1],
-  //     //   z: angularVelocity[2]
-  //     // }, true);
-  //   }
-  // }, []); // Empty dependency array so it only runs once
-
-  // Store angular velocity in state so it's stable per die instance
-  // const [angularVelocity] = useState<[number, number, number]>(() => [
-  //   Math.random() * 10,
-  //   Math.random() * 10,
-  //   Math.random() * 10,
-  // ]);
-
-  // const hasThrown = useRef(false);
-
-  // useFrame(() => {
-  //   if (dieRef.current && !hasThrown.current) {
-  //     hasThrown.current = true;
-  //     dieRef.current.applyImpulse({ x: initialVelocity[0], y: initialVelocity[1], z: initialVelocity[2] }, true);
-  //     dieRef.current.applyTorqueImpulse({ x: angularVelocity[0], y: angularVelocity[1], z: angularVelocity[2] }, true);
-  //   }
-  // });
-
-  // console.log('RigidDie', id, origin, initialVelocity);
 
   return (
     <RigidBody
@@ -194,8 +107,22 @@ export function RigidDie({ id, origin, initialVelocity, onRest }: { id: string, 
       restitution={0.8}
       linearDamping={0.5}
       angularDamping={0.5}
-      // linearVelocity={initialVelocity}
-      // angularVelocity={angularVelocity}
+      // We have to make a copy of the initialVelocity to avoid a recursive error.
+      linearVelocity={[
+        initialVelocity[0],
+        initialVelocity[1],
+        initialVelocity[2],
+      ] as [number, number, number]}
+      angularVelocity={[
+        Math.random() * 10,
+        Math.random() * 10,
+        Math.random() * 10,
+      ] as [number, number, number]}
+      rotation={[
+        Math.random() * 2 * Math.PI,
+        Math.random() * 2 * Math.PI,
+        Math.random() * 2 * Math.PI,
+      ] as [number, number, number]}
       position={origin}
       onSleep={handleSleep}
       onWake={handleWake}

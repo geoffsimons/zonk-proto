@@ -155,8 +155,8 @@ function SceneView() {
     const id = `die-${nextId}`;
     // Clone the origin
     const dieOrigin = origin.slice() as [number, number, number];
-    const power = 50;
-    const accuracy = 0.8;
+    const power = 80;
+    const accuracy = 0.6;
 
     const initialVelocity = calculateInitialVelocity(power, accuracy, origin);
 

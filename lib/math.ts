@@ -27,3 +27,56 @@ export function calculateAnglesFromPosition([x, y, z]: [number, number, number])
 
   return { azimuthal, polar };
 }
+
+export function calculateDieValue(quat: { x: number, y: number, z: number, w: number }): number {
+  // Map die faces to normal vectors (in local space) and associated numbers.
+  // Order: +Z, -Z, +Y, -Y, +X, -X
+  // [normal vector, die number]
+  const faceNormals: [number[], number][] = [
+    [[0, 0, 1], 1],   // Front (+Z)
+    [[0, 0, -1], 6],  // Back (-Z)
+    [[0, 1, 0], 5],   // Top (+Y)
+    [[0, -1, 0], 2],  // Bottom (-Y)
+    [[1, 0, 0], 3],   // Right (+X)
+    [[-1, 0, 0], 4],  // Left (-X)
+  ];
+
+  // Convert quaternion to THREE.Quaternion and world up to vector
+  // create a helper so we don't depend on THREE at insertion
+  function applyQuat(q: { x: number, y: number, z: number, w: number }, v: [number, number, number]): [number, number, number] {
+    // Quaternion * vector math
+    const x = v[0], y = v[1], z = v[2];
+    const qx = q.x, qy = q.y, qz = q.z, qw = q.w;
+
+    // t = 2 * cross(q.xyz, v)
+    const tx = 2 * (qy * z - qz * y);
+    const ty = 2 * (qz * x - qx * z);
+    const tz = 2 * (qx * y - qy * x);
+
+    // v' = v + qw * t + cross(q.xyz, t)
+    const rx = x + qw * tx + (qy * tz - qz * ty);
+    const ry = y + qw * ty + (qz * tx - qx * tz);
+    const rz = z + qw * tz + (qx * ty - qy * tx);
+
+    return [rx, ry, rz];
+  }
+
+  // Compare each face's transformed normal against world up ([0, 1, 0])
+  let maxDot = -Infinity;
+  let resultNumber = 1;
+  for (const [normal, number] of faceNormals) {
+    const worldNormal = applyQuat(quat, normal as [number, number, number]);
+    // Normalize (not needed as all are 1, but do it for generality)
+    const len = Math.sqrt(worldNormal[0]**2 + worldNormal[1]**2 + worldNormal[2]**2);
+    const unitNormal = [worldNormal[0]/len, worldNormal[1]/len, worldNormal[2]/len];
+    // Dot with world up
+    const dot = unitNormal[1]; // world up = [0,1,0]
+    if (dot > maxDot) {
+      maxDot = dot;
+      resultNumber = number;
+    }
+  }
+
+  return resultNumber;
+}
+
