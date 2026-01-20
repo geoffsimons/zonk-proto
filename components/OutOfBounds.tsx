@@ -10,6 +10,7 @@ export default function OutOfBounds({ onOutOfBounds }: { onOutOfBounds: () => vo
     <RigidBody
       type="fixed"
       onCollisionEnter={handleOutOfBounds}
+      restitution={0}
     >
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.2, 0]} receiveShadow>
         <planeGeometry args={[200, 200]} />
