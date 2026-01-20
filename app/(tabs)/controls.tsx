@@ -175,6 +175,12 @@ const styles = StyleSheet.create({
   accuracyControl: {
     flex: 1,
     backgroundColor: '#25292e',
+    width: '50%',
+    alignSelf: 'center',
+    padding: 10,
+    gap: 10,
+    borderWidth: 1,
+    borderColor: 'red',
   },
   accuracyLabel: {
     color: '#fff',
@@ -201,6 +207,7 @@ const styles = StyleSheet.create({
   controlPanel: {
     flex: 1,
     backgroundColor: '#25292e',
+    height: 50,
   },
   powerControl: {
     flex: 1,
@@ -210,6 +217,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 10,
     gap: 10,
+    borderWidth: 1,
+    borderColor: 'red',
   },
   powerLabel: {
     color: '#fff',
