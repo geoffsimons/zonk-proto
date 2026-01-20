@@ -89,24 +89,33 @@ function calculateInitialVelocity(power: number, accuracy: number, origin: [numb
   const deviation = MAX_DEVIATION * accuracy;
   console.log('Deviation magnitude', deviation);
 
-  //
   const [x, y, z] = origin;
-  const direction = [-x, 0, -z];
-  // Normalize the direction
+
+  const target = [0, 0, 0];
+  const deviatedTarget = [
+    target[0] + (-0.5 + Math.random()) * deviation,
+    target[1] + (-0.5 + Math.random()) * deviation,
+    target[2] + (-0.5 + Math.random()) * deviation,
+  ];
+
+  console.log('Deviated target', deviatedTarget);
+
+  const direction = [
+    deviatedTarget[0] - x,
+    deviatedTarget[1] - y,
+    deviatedTarget[2] - z,
+  ];
+
+  console.log('Direction', direction);
+
   const directionLength = Math.sqrt(direction[0]**2 + direction[1]**2 + direction[2]**2);
-  console.log('Direction', direction, directionLength);
+
   const normalizedDirection = [direction[0] / directionLength, direction[1] / directionLength, direction[2] / directionLength];
   console.log('Normalized direction', normalizedDirection);
 
-
-  const deviationX = Math.random() * deviation;
-  const deviationZ = Math.random() * deviation;
-  const deviationY = Math.random() * deviation;
-  console.log('Deviation', deviationX, deviationY, deviationZ);
-
-  const velocityX = magnitude * (normalizedDirection[0] + deviationX);
-  const velocityY = magnitude * (normalizedDirection[1] + deviationY);
-  const velocityZ = magnitude * (normalizedDirection[2] + deviationZ);
+  const velocityX = magnitude * (normalizedDirection[0]);
+  const velocityY = magnitude * (normalizedDirection[1]);
+  const velocityZ = magnitude * (normalizedDirection[2]);
 
   const velocity = [velocityX, velocityY, velocityZ];
   console.log('Velocity', velocity);
