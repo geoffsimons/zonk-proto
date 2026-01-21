@@ -12,6 +12,7 @@ import React, { useState } from 'react';
 import { Button, StyleSheet, Text, TextInput, View } from 'react-native';
 
 import { showConfirmDialog } from '@/components/ConfirmDialog';
+import IconButton from '@/components/IconButton';
 import { nanoid } from 'nanoid';
 
 function Scoreboard() {
@@ -59,9 +60,14 @@ function PlayerList() {
     <>
       <Text style={styles.text}>Player List</Text>
       {players.map((player) => (
-        <View style={styles.player} key={player.id}>
+        <View style={styles.playerRow} key={player.id}>
           <Text style={styles.name}>{player.name}</Text>
-          <Button title="Remove Player" onPress={() => removePlayer(player.id)} />
+          <IconButton
+            name="close"
+            onPress={() => removePlayer(player.id)}
+            color="#ff4444"
+            size={24}
+          />
         </View>
       ))}
     </>
@@ -111,8 +117,8 @@ function Game() {
 
   return (
     <>
-      <Scoreboard />
       <Text style={styles.text}>Game</Text>
+      <Scoreboard />
       <QuitGameButton />
     </>
   );
@@ -151,9 +157,19 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     margin: 10,
   },
+  playerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: '#fff',
+    padding: 10,
+    borderRadius: 10,
+    margin: 10,
+  },
   name: {
     fontSize: 20,
     fontWeight: 'bold',
+    flex: 1,
   },
   score: {
     fontSize: 20,
