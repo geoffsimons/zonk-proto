@@ -135,6 +135,25 @@ const useGameStore = create<GameState>((set, get) => ({
     updatePermissions();
   },
 
+  setDieValue: (id: string, value: number) => {
+    const { dice } = get();
+    set({
+      dice: dice.map((die) => die.id === id ? { ...die, value } : die),
+    });
+  },
+
+  throwDie: () => {
+    const { dice, updatePermissions } = get();
+    // Get the next die in hand.
+    const nextDie = dice.find((die) => die.status === DieStatus.IN_HAND);
+    // TODO: Consider throwing an error if !nextDie.
+
+    set({
+      dice: dice.map((die) => die.id === nextDie?.id ? { ...die, status: DieStatus.ROLLING} : die),
+    });
+    updatePermissions();
+  },
+
   // We can hold multiple dice at once, and there are some cases where you must hold 3 or more dice.
   // But the UI will update on a per-die basis.
   holdDie: (id: string) => {

@@ -8,13 +8,15 @@
  */
 
 import useGameStore from '@/model/useGameStore';
-import React, { useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { Button, StyleSheet, Text, TextInput, View } from 'react-native';
 
 import { showConfirmDialog } from '@/components/ConfirmDialog';
+import { getDotsForNumber } from '@/components/Die';
 import IconButton from '@/components/IconButton';
 import { DieStatus } from '@/model/state';
 import { nanoid } from 'nanoid';
+import Svg, { Circle, Rect } from 'react-native-svg';
 
 function Scoreboard() {
   const { players } = useGameStore();
@@ -123,8 +125,84 @@ function PreGame() {
   return null;
 }
 
+function Die2D({ id, value, size }: { id: string, value: number, size: number }) {
+  const dots = getDotsForNumber(value);
+  return (
+    <Svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
+      <Rect key={`rect-${id}`} x={0} y={0} width={size} height={size} fill="white" />
+      {dots.map((dot, index) => (
+        <Circle key={`dot-${id}-${index}`} cx={dot[0] * size} cy={dot[1] * size} r={size * 0.1} fill="black" />
+      ))}
+    </Svg>
+  );
+}
+
+// Display the dice that have been thrown or are resting.
+function Playfield() {
+  const { dice, setDieValue, setDiceStatus } = useGameStore();
+  const rollingDice = dice.filter((die) => die.status === DieStatus.ROLLING);
+  const restingDice = dice.filter((die) => die.status === DieStatus.RESTING);
+  const activeDice = [...rollingDice, ...restingDice];
+
+  const intervalRef = useRef<NodeJS.Timeout | null>(null);
+
+  const simulateRolling = useCallback((): NodeJS.Timeout | null => {
+    // Use an interval to simulate the rolling of any dice in the ROLLING state.
+    // Die should spend about 1 second in the ROLLING state,
+    // during which time we will update it's value randomly.
+    // We will use a setInterval to update the value of the die.
+    if (rollingDice.length === 0) return null;
+
+    const interval = setInterval(() => {
+      rollingDice.forEach((die) => {
+        const newVal = Math.floor(Math.random() * 6) + 1;
+        setDieValue(die.id, newVal);
+      });
+    }, 100);
+
+    // After 1 second, set the dice to the RESTING state.
+    setTimeout(() => {
+      rollingDice.forEach((die) => {
+        setDiceStatus([die.id], DieStatus.RESTING);
+      });
+    }, 1000);
+
+    return interval as unknown as NodeJS.Timeout;
+  }, [rollingDice, setDieValue]);
+
+
+  useEffect(() => {
+    if (rollingDice.length > 0) {
+      const interval = simulateRolling();
+      if (interval) {
+        intervalRef.current = interval;
+      }
+    } else {
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current);
+      }
+    }
+  }, [rollingDice, simulateRolling]);
+
+  return (
+    <View style={styles.playfield}>
+      {activeDice.map((die) => (
+        <Die2D key={die.id} id={die.id} value={die.value} size={100} />
+      ))}
+    </View>
+  );
+}
+
+function ThrowDieButton() {
+  const { throwDie } = useGameStore();
+
+  return (
+    <Button title="Throw Die" onPress={throwDie} />
+  );
+}
+
 function Game() {
-  const { permissions, round, startGame } = useGameStore();
+  const { permissions, round } = useGameStore();
 
   if (round === 0) {
     return null;
@@ -135,6 +213,8 @@ function Game() {
       <Text style={styles.text}>Game</Text>
       <Scoreboard />
       <TurnStatus />
+      <Playfield />
+      {permissions.canThrowDie && <ThrowDieButton />}
       <QuitGameButton />
     </>
   );
@@ -213,5 +293,13 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     padding: 10,
+  },
+  playfield: {
+    height: 120,
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'center',
+    padding: 10,
+    backgroundColor: 'green',
   },
 });

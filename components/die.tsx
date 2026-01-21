@@ -3,7 +3,7 @@ import { RapierRigidBody, RigidBody } from '@react-three/rapier';
 import React, { useCallback, useRef } from 'react';
 
 // Helper to get dot positions for each number (standard dice pattern)
-function getDotsForNumber(number: number): Array<[number, number]> {
+export function getDotsForNumber(number: number): Array<[number, number]> {
   const positions: Array<[number, number]> = [];
   const offset = 0.25; // Distance from center for dots
 
