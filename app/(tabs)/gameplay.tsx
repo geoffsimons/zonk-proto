@@ -9,8 +9,9 @@
 
 import useGameStore from '@/model/useGameStore';
 import React, { useState } from 'react';
-import { Alert, Button, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Button, StyleSheet, Text, TextInput, View } from 'react-native';
 
+import { showConfirmDialog } from '@/components/ConfirmDialog';
 import { nanoid } from 'nanoid';
 
 function Scoreboard() {
@@ -70,19 +71,18 @@ function PlayerList() {
 function QuitGameButton() {
   const { quitGame } = useGameStore();
 
-  const showConfirmDialog = () => {
-    console.log('showConfirmDialog...');
-    Alert.alert(
-      'Quit Game',
-      'Are you sure you want to quit the game?',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        { text: 'Quit', style: 'destructive', onPress: quitGame },
-      ]
-    );
+  const handleQuitPress = () => {
+    showConfirmDialog({
+      title: 'Quit Game',
+      message: 'Are you sure you want to quit the game?',
+      confirmText: 'Quit',
+      cancelText: 'Cancel',
+      onConfirm: quitGame,
+    });
   };
+
   return (
-    <Button title="Quit Game" onPress={showConfirmDialog} />
+    <Button title="Quit Game" onPress={handleQuitPress} />
   );
 }
 

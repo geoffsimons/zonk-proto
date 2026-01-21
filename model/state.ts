@@ -53,7 +53,8 @@ export interface GameState {
   dice: DieState[];
   rolls: RollResult[];
 
-  getActions: () => GamePermissions;
+  permissions: GamePermissions;
+  updatePermissions: () => void;
   addPlayer: (id: string, name: string) => void;
   removePlayer: (id: string) => void;
   startGame: () => void;
