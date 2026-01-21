@@ -186,10 +186,12 @@ function ThrowDieButton() {
 // Display the dice that have been thrown or are resting.
 function Playfield() {
   const { dice, toggleHold, permissions } = useGameStore();
-  const rollingDice = dice.filter((die) => die.status === DieStatus.ROLLING);
-  const restingDice = dice.filter((die) => die.status === DieStatus.RESTING);
-  const heldDice = dice.filter((die) => die.status === DieStatus.HELD);
-  const activeDice = [...rollingDice, ...restingDice, ...heldDice];
+  // Filter to only active dice while preserving the original order
+  const activeDice = dice.filter((die) =>
+    die.status === DieStatus.ROLLING ||
+    die.status === DieStatus.RESTING ||
+    die.status === DieStatus.HELD
+  );
 
   console.log('Playfield', dice, permissions);
 
