@@ -8,7 +8,7 @@
  */
 
 import useGameStore from '@/model/useGameStore';
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Button, StyleSheet, Text, TextInput, View } from 'react-native';
 
 import { showConfirmDialog } from '@/components/ConfirmDialog';
@@ -125,71 +125,55 @@ function PreGame() {
   return null;
 }
 
-function Die2D({ id, value, size }: { id: string, value: number, size: number }) {
+function Die2D({ id, value, size, isHeld, onHold }: { id: string, value: number, size: number, isHeld: boolean, onHold: (id: string) => void }) {
   const dots = getDotsForNumber(value);
+  console.log('Die2D', id, value, size, dots);
   return (
-    <Svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
-      <Rect key={`rect-${id}`} x={0} y={0} width={size} height={size} fill="white" />
+    <Svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} onPress={() => onHold(id)}>
+      {isHeld && (
+        <Rect
+          key={`rect-${id}`}
+          x={0}
+          y={0}
+          width={size}
+          height={size}
+          fill="yellow"
+        />
+      )}
+      <Rect
+        key={`rect-${id}`}
+        x={5}
+        y={5}
+        width={size - 10}
+        height={size - 10}
+        fill="white"
+      />
       {dots.map((dot, index) => (
-        <Circle key={`dot-${id}-${index}`} cx={dot[0] * size} cy={dot[1] * size} r={size * 0.1} fill="black" />
+        <Circle key={`dot-${id}-${index}`} cx={size / 2 - dot[0] * size} cy={size / 2 - dot[1] * size} r={size * 0.1} fill="black" />
       ))}
     </Svg>
   );
 }
 
-// Display the dice that have been thrown or are resting.
-function Playfield() {
-  const { dice, setDieValue, setDiceStatus } = useGameStore();
-  const rollingDice = dice.filter((die) => die.status === DieStatus.ROLLING);
-  const restingDice = dice.filter((die) => die.status === DieStatus.RESTING);
-  const activeDice = [...rollingDice, ...restingDice];
+function RollingSimulator() {
+  const { dice, setDiceStatus, setDieValue } = useGameStore();
 
-  const intervalRef = useRef<NodeJS.Timeout | null>(null);
+  useEffect(() => {
+    const rollingDice = dice.filter((die) => die.status === DieStatus.ROLLING);
+    console.log('Rolling dice', rollingDice);
 
-  const simulateRolling = useCallback((): NodeJS.Timeout | null => {
-    // Use an interval to simulate the rolling of any dice in the ROLLING state.
-    // Die should spend about 1 second in the ROLLING state,
-    // during which time we will update it's value randomly.
-    // We will use a setInterval to update the value of the die.
-    if (rollingDice.length === 0) return null;
 
-    const interval = setInterval(() => {
+    if (rollingDice.length > 0) {
       rollingDice.forEach((die) => {
         const newVal = Math.floor(Math.random() * 6) + 1;
         setDieValue(die.id, newVal);
-      });
-    }, 100);
-
-    // After 1 second, set the dice to the RESTING state.
-    setTimeout(() => {
-      rollingDice.forEach((die) => {
         setDiceStatus([die.id], DieStatus.RESTING);
       });
-    }, 1000);
-
-    return interval as unknown as NodeJS.Timeout;
-  }, [rollingDice, setDieValue]);
-
-
-  useEffect(() => {
-    if (rollingDice.length > 0) {
-      const interval = simulateRolling();
-      if (interval) {
-        intervalRef.current = interval;
-      }
-    } else {
-      if (intervalRef.current) {
-        clearInterval(intervalRef.current);
-      }
     }
-  }, [rollingDice, simulateRolling]);
+  }, [dice, setDieValue, setDiceStatus]);
 
   return (
-    <View style={styles.playfield}>
-      {activeDice.map((die) => (
-        <Die2D key={die.id} id={die.id} value={die.value} size={100} />
-      ))}
-    </View>
+    <></>
   );
 }
 
@@ -198,6 +182,40 @@ function ThrowDieButton() {
 
   return (
     <Button title="Throw Die" onPress={throwDie} />
+  );
+}
+
+// Display the dice that have been thrown or are resting.
+function Playfield() {
+  const { dice, toggleHold, permissions } = useGameStore();
+  const rollingDice = dice.filter((die) => die.status === DieStatus.ROLLING);
+  const restingDice = dice.filter((die) => die.status === DieStatus.RESTING);
+  const heldDice = dice.filter((die) => die.status === DieStatus.HELD);
+  const activeDice = [...rollingDice, ...restingDice, ...heldDice];
+
+  console.log('Playfield', dice, permissions);
+
+  const handleHold = (id: string) => {
+    console.log('handleHold', id);
+    if (!permissions.canHoldDice) {
+      console.log('cannot hold die');
+      return;
+    }
+    toggleHold(id);
+  };
+
+  return (
+    <View style={styles.playfield}>
+      {activeDice.map((die) => (
+        <Die2D
+          key={die.id}
+          id={die.id}
+          value={die.value}
+          size={100}
+          isHeld={die.status === DieStatus.HELD}
+          onHold={handleHold} />
+      ))}
+    </View>
   );
 }
 
@@ -215,6 +233,7 @@ function Game() {
       <TurnStatus />
       <Playfield />
       {permissions.canThrowDie && <ThrowDieButton />}
+      <RollingSimulator />
       <QuitGameButton />
     </>
   );
@@ -299,6 +318,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     flexWrap: 'wrap',
     justifyContent: 'center',
+    gap: 20,
     padding: 10,
     backgroundColor: 'green',
   },

@@ -66,7 +66,7 @@ export interface GameState {
   setDiceStatus: (ids: string[], status: DieStatus) => void;
   setDieValue: (id: string, value: number) => void;
   throwDie: () => void;
-  holdDie: (id: string) => void;
+  toggleHold: (id: string) => void;
   completeRoll: () => void;
   resetDice: () => void;
   quitGame: () => void;

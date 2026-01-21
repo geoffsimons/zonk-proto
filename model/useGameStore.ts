@@ -156,10 +156,13 @@ const useGameStore = create<GameState>((set, get) => ({
 
   // We can hold multiple dice at once, and there are some cases where you must hold 3 or more dice.
   // But the UI will update on a per-die basis.
-  holdDie: (id: string) => {
+  toggleHold: (id: string) => {
+    console.log('holdDie', id);
     const { dice, updatePermissions } = get();
+    const isHeld = dice.find((die) => die.id === id)?.status === DieStatus.HELD;
+    const newStatus = isHeld ? DieStatus.READY : DieStatus.HELD;
     set({
-      dice: dice.map((die) => die.id === id ? { ...die, status: DieStatus.HELD } : die),
+      dice: dice.map((die) => die.id === id ? { ...die, status: newStatus } : die),
     });
     updatePermissions();
   },

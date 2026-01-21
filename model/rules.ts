@@ -50,3 +50,8 @@ export function pointsForDice(dice: DieState[]): { points: number, isValidHold: 
 
   return { points, isValidHold: availableDice.length === 0 };
 }
+
+export function isBusted(dice: DieState[]): boolean {
+  // If you hold all the dice, and you have no points, you are busted.
+  return pointsForDice(dice).points === 0;
+}
