@@ -62,7 +62,7 @@ export interface GameState {
   startLevel: () => void;
   endPlayerTurn: () => void;
   bankPoints: () => void;
-  rollDice: () => void;
+  startRolling: () => void;
   setDiceStatus: (ids: string[], status: DieStatus) => void;
   holdDie: (id: string) => void;
   completeRoll: () => void;

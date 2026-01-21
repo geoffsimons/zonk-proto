@@ -13,6 +13,7 @@ import { Button, StyleSheet, Text, TextInput, View } from 'react-native';
 
 import { showConfirmDialog } from '@/components/ConfirmDialog';
 import IconButton from '@/components/IconButton';
+import { DieStatus } from '@/model/state';
 import { nanoid } from 'nanoid';
 
 function Scoreboard() {
@@ -25,6 +26,20 @@ function Scoreboard() {
           <Text style={styles.score}>{player.score}</Text>
         </View>
       ))}
+    </View>
+  );
+}
+
+function TurnStatus() {
+  const { dice, currentPlayerIndex, players, points, level } = useGameStore();
+  const currentPlayer = players[currentPlayerIndex];
+  const diceInHand = dice.filter((die) => die.status === DieStatus.IN_HAND);
+  return (
+    <View style={styles.turnStatus}>
+      <Text style={styles.text}>{currentPlayer.name}'s Turn</Text>
+      <Text style={styles.text}>Level {level}</Text>
+      <Text style={styles.text}>Points {points}</Text>
+      <Text style={styles.text}>{diceInHand.length} dice in hand</Text>
     </View>
   );
 }
@@ -119,6 +134,7 @@ function Game() {
     <>
       <Text style={styles.text}>Game</Text>
       <Scoreboard />
+      <TurnStatus />
       <QuitGameButton />
     </>
   );
@@ -192,5 +208,10 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
     padding: 10,
     borderRadius: 10,
+  },
+  turnStatus: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    padding: 10,
   },
 });

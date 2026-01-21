@@ -62,30 +62,35 @@ const useGameStore = create<GameState>((set, get) => ({
   },
 
   startGame: () => {
+    const { startPlayerTurn, updatePermissions} = get();
     set({
       round: 1,
       currentPlayerIndex: 0,
     });
-    get().updatePermissions();
+    updatePermissions();
+    startPlayerTurn();
   },
   // ----------------------------------------------------------------------------
 
   startPlayerTurn: () => {
+    const { startLevel, updatePermissions } = get();
     set({
       points: 0,
       level: 0,
     });
-    get().updatePermissions();
+    updatePermissions();
+    startLevel();
   },
 
   startLevel: () => {
-    const { dice, level, updatePermissions } = get();
+    const { dice, level, startRolling, updatePermissions } = get();
     set({
       dice: dice.map((die) => ({ ...die, value: 0, status: DieStatus.READY })),
       level: level + 1,
       rolls: [],
     });
     updatePermissions();
+    startRolling();
   },
 
   endPlayerTurn: () => {
@@ -107,7 +112,7 @@ const useGameStore = create<GameState>((set, get) => ({
     updatePermissions();
   },
 
-  rollDice: () => {
+  startRolling: () => {
     // When a player starts a roll, they pick up any ready dice, or dice that are not held.
     const { dice, updatePermissions } = get();
     set({
