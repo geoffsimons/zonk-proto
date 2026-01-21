@@ -35,6 +35,15 @@ export interface RollResult {
   points: number;
 }
 
+export interface GamePermissions {
+  canAddPlayer: (name: string) => boolean;
+  canStartGame: boolean;
+  canCompleteRoll: boolean;
+  canThrowDie: boolean;
+  canHoldDice: boolean;
+  canBankPoints: boolean;
+}
+
 export interface GameState {
   players: Player[];
   round: number;
@@ -43,4 +52,19 @@ export interface GameState {
   level: number;
   dice: DieState[];
   rolls: RollResult[];
+
+  getActions: () => GamePermissions;
+  addPlayer: (id: string, name: string) => void;
+  removePlayer: (id: string) => void;
+  startGame: () => void;
+  startPlayerTurn: () => void;
+  startLevel: () => void;
+  endPlayerTurn: () => void;
+  bankPoints: () => void;
+  rollDice: () => void;
+  setDiceStatus: (ids: string[], status: DieStatus) => void;
+  holdDie: (id: string) => void;
+  completeRoll: () => void;
+  resetDice: () => void;
+  quitGame: () => void;
 }

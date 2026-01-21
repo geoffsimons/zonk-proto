@@ -9,10 +9,19 @@ const useGameStore = create<GameState>((set, get) => ({
   dice: ['die-1', 'die-2', 'die-3', 'die-4', 'die-5'].map((id) => ({ id, value: 0, status: DieStatus.READY })),
   rolls: [] as RollResult[],
   currentPlayerIndex: 0,
-  level: 1,
+  // Level 0 is a pre-turn state.
+  level: 0,
   points: 0,
+  permissions: {
+    canAddPlayer: name => name.length > 0,
+    canStartGame: false,
+    canCompleteRoll: false,
+    canThrowDie: false,
+    canHoldDice: false,
+    canBankPoints: false,
+  },
 
-  getActions: () => {
+  updatePermissions: () => {
     const { dice, round, currentPlayerIndex, players } = get();
     const diceInHand = dice.filter((die) => die.status === DieStatus.IN_HAND);
     const heldDice = dice.filter((die) => die.status === DieStatus.HELD);
@@ -24,79 +33,115 @@ const useGameStore = create<GameState>((set, get) => ({
     const activeDice = dice.filter((die) => die.status !== DieStatus.SCORED);
 
     const { isValidHold, points } = pointsForDice(heldDice);
-    return {
-      canAddPlayer: round === 0,
-      canRemovePlayer: round === 0 && players.length > 0,
-      canStartGame: round === 0 && players.length > 0,
-      canCompleteRoll: heldDice.length > 0 && isValidHold,
-      canThrowDie: diceInHand.length > 0 && rollingDice.length === 0,
-      canHoldDice: restingDice.length > 0 && restingDice.length === activeDice.length,
-      canBankPoints: points > 0 && round > 1,
-    };
+
+    set({
+      permissions: {
+        canAddPlayer: name => name.length > 0 && players.find((player) => player.name === name) === undefined,
+        canStartGame: round === 0 && players.length > 0,
+        canCompleteRoll: heldDice.length > 0 && isValidHold,
+        canThrowDie: diceInHand.length > 0 && rollingDice.length === 0,
+        canHoldDice: restingDice.length > 0 && restingDice.length === activeDice.length,
+        canBankPoints: points > 0 && round > 1,
+      },
+    });
   },
 
+  // Pre-game actions. ----------------------------------------------------------
   addPlayer: (id: string, name: string) => {
-    set({ players: [...get().players, { id, name, score: 0 }] });
+    const { players, updatePermissions } = get();
+    console.log('addPlayer', id, name);
+    set({ players: [...players, { id, name, score: 0 }] });
+    updatePermissions();
   },
 
   removePlayer: (id: string) => {
-    set({ players: get().players.filter((player) => player.id !== id) });
+    const { players, updatePermissions } = get();
+    console.log('removePlayer', id);
+    set({ players: players.filter((player) => player.id !== id) });
+    updatePermissions();
   },
+
+  startGame: () => {
+    set({
+      round: 1,
+      currentPlayerIndex: 0,
+    });
+    get().updatePermissions();
+  },
+  // ----------------------------------------------------------------------------
 
   startPlayerTurn: () => {
     set({
-      dice: get().dice.map((die) => ({ ...die, value: 0, status: DieStatus.READY })),
       points: 0,
-      level: 1,
+      level: 0,
     });
+    get().updatePermissions();
+  },
+
+  startLevel: () => {
+    const { dice, level, updatePermissions } = get();
+    set({
+      dice: dice.map((die) => ({ ...die, value: 0, status: DieStatus.READY })),
+      level: level + 1,
+      rolls: [],
+    });
+    updatePermissions();
   },
 
   endPlayerTurn: () => {
     // Determnine if the game is complete.
     // If currentPlayerIndex is the last player, advance the next round.
+    const { currentPlayerIndex, players, round, updatePermissions } = get();
+    set({
+      round: currentPlayerIndex === players.length - 1 ? round + 1 : round,
+      currentPlayerIndex: (currentPlayerIndex + 1) % players.length,
+    });
+    updatePermissions();
   },
 
   bankPoints: () => {
-    const { currentPlayerIndex, players, points, round } = get();
+    const { currentPlayerIndex, players, points, updatePermissions } = get();
     set({
       players: players.map((player, index) => index === currentPlayerIndex ? { ...player, score: player.score + points } : player),
-      points: 0,
-      level: 1,
-      round: currentPlayerIndex === players.length - 1 ? round + 1 : round,
-      currentPlayerIndex: (currentPlayerIndex + 1) % players.length,
-      dice: get().dice.map((die) => ({ ...die, value: 0, status: DieStatus.READY })),
-      rolls: [],
     });
+    updatePermissions();
   },
 
   rollDice: () => {
     // When a player starts a roll, they pick up any ready dice, or dice that are not held.
+    const { dice, updatePermissions } = get();
     set({
-      dice: get().dice.map((die) => {
+      dice: dice.map((die) => {
         if (die.status === DieStatus.READY || die.status === DieStatus.RESTING) {
           return { ...die, status: DieStatus.IN_HAND };
         }
         return die;
       })
     });
+    updatePermissions();
   },
 
-  //TODO: Consider if we just want a generic setDieStatus function.
-  setDieRolling: (id: string) => {
+  // Bulk update the status of multiple dice.
+  setDiceStatus: (ids: string[], status: DieStatus) => {
+    const { dice, updatePermissions } = get();
     set({
-      dice: get().dice.map((die) => die.id === id ? { ...die, status: DieStatus.ROLLING } : die),
-    })
+      dice: dice.map((die) => ids.includes(die.id) ? { ...die, status } : die),
+    });
+    updatePermissions();
   },
 
   // We can hold multiple dice at once, and there are some cases where you must hold 3 or more dice.
+  // But the UI will update on a per-die basis.
   holdDie: (id: string) => {
+    const { dice, updatePermissions } = get();
     set({
-      dice: get().dice.map((die) => die.id === id ? { ...die, status: DieStatus.HELD } : die),
-    })
+      dice: dice.map((die) => die.id === id ? { ...die, status: DieStatus.HELD } : die),
+    });
+    updatePermissions();
   },
 
   completeRoll: () => {
-    const { dice, points } = get();
+    const { dice, points, rolls, updatePermissions } = get();
     const heldDice = dice.filter((die) => die.status === DieStatus.HELD);
     // Collect the held dice and calculate the points.
     const rollResult: RollResult = {
@@ -104,28 +149,33 @@ const useGameStore = create<GameState>((set, get) => ({
       points: pointsForDice(heldDice).points,
     };
     set({
-      rolls: [...get().rolls, rollResult],
+      rolls: [...rolls, rollResult],
       dice: dice.map((die) => heldDice.includes(die) ? { ...die, status: DieStatus.SCORED } : die),
       points: points + rollResult.points,
     });
-  },
-
-  restDice: (ids: string[]) => {
-    set({
-      dice: get().dice.map((die) => ids.includes(die.id) ? { ...die, status: DieStatus.RESTING } : die),
-    })
-  },
-
-  spazDice: (ids: string[]) => {
-    set({
-      dice: get().dice.map((die) => ids.includes(die.id) ? { ...die, status: DieStatus.SPAZ } : die),
-    })
+    updatePermissions();
   },
 
   resetDice: () => {
+    const { dice, updatePermissions } = get();
     set({
-      dice: get().dice.map((die) => ({ ...die, value: 0, status: DieStatus.IN_HAND })),
-    })
+      dice: dice.map((die) => ({ ...die, value: 0, status: DieStatus.READY })),
+    });
+    updatePermissions();
+  },
+
+  quitGame: () => {
+    const { dice, updatePermissions } = get();
+    set({
+      round: 0,
+      currentPlayerIndex: 0,
+      level: 0,
+      points: 0,
+      players: [],
+      dice: dice.map((die) => ({ ...die, status: DieStatus.READY })),
+      rolls: [],
+    });
+    updatePermissions();
   },
 
 }));
