@@ -40,6 +40,12 @@ export default function TabLayout() {
           <Ionicons name="settings" color={focused ? color : '#888'} size={24} />
         ) }}
         />
+      <Tabs.Screen
+        name="gameplay"
+        options={{ title: 'Gameplay', tabBarIcon: ({ color, focused }) => (
+          <Ionicons name="game-controller" color={focused ? color : '#888'} size={24} />
+        ) }}
+        />
     </Tabs>
   );
 }
