@@ -30,9 +30,10 @@ const useGameStore = create<GameState>((set, get) => ({
     const spazDice = dice.filter((die) => die.status === DieStatus.SPAZ);
     const scoredDice = dice.filter((die) => die.status === DieStatus.SCORED);
     const readyDice = dice.filter((die) => die.status === DieStatus.READY);
-    const activeDice = dice.filter((die) => die.status !== DieStatus.SCORED);
 
     const { isValidHold, points } = pointsForDice(heldDice);
+
+    console.log('updatePermissions', dice);
 
     set({
       permissions: {
@@ -40,7 +41,7 @@ const useGameStore = create<GameState>((set, get) => ({
         canStartGame: round === 0 && players.length > 0,
         canCompleteRoll: heldDice.length > 0 && isValidHold,
         canThrowDie: diceInHand.length > 0 && rollingDice.length === 0,
-        canHoldDice: restingDice.length > 0 && restingDice.length === activeDice.length,
+        canHoldDice: restingDice.length > 0 && diceInHand.length === 0 && rollingDice.length === 0,
         canBankPoints: points > 0 && round > 1,
       },
     });
@@ -160,7 +161,7 @@ const useGameStore = create<GameState>((set, get) => ({
     console.log('holdDie', id);
     const { dice, updatePermissions } = get();
     const isHeld = dice.find((die) => die.id === id)?.status === DieStatus.HELD;
-    const newStatus = isHeld ? DieStatus.READY : DieStatus.HELD;
+    const newStatus = isHeld ? DieStatus.RESTING : DieStatus.HELD;
     set({
       dice: dice.map((die) => die.id === id ? { ...die, status: newStatus } : die),
     });

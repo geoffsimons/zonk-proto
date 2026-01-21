@@ -127,19 +127,17 @@ function PreGame() {
 
 function Die2D({ id, value, size, isHeld, onHold }: { id: string, value: number, size: number, isHeld: boolean, onHold: (id: string) => void }) {
   const dots = getDotsForNumber(value);
-  console.log('Die2D', id, value, size, dots);
   return (
     <Svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} onPress={() => onHold(id)}>
-      {isHeld && (
-        <Rect
-          key={`rect-${id}`}
-          x={0}
-          y={0}
-          width={size}
-          height={size}
-          fill="yellow"
-        />
-      )}
+      <Rect
+        key={`rect-${id}-held`}
+        x={0}
+        y={0}
+        width={size}
+        height={size}
+        fill="yellow"
+        opacity={isHeld ? 1 : 0}
+      />
       <Rect
         key={`rect-${id}`}
         x={5}
