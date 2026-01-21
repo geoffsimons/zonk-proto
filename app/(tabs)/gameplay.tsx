@@ -14,7 +14,7 @@ import { Button, StyleSheet, Text, TextInput, View } from 'react-native';
 import { showConfirmDialog } from '@/components/ConfirmDialog';
 import { getDotsForNumber } from '@/components/Die';
 import IconButton from '@/components/IconButton';
-import { DieStatus } from '@/model/state';
+import { DieStatus, RollResult } from '@/model/state';
 import { nanoid } from 'nanoid';
 import Svg, { Circle, Rect } from 'react-native-svg';
 
@@ -125,10 +125,10 @@ function PreGame() {
   return null;
 }
 
-function Die2D({ id, value, size, isHeld, onHold }: { id: string, value: number, size: number, isHeld: boolean, onHold: (id: string) => void }) {
+function Die2D({ id, value, size, isHeld = false, onHold }: { id: string, value: number, size: number, isHeld?: boolean, onHold?: (id: string) => void }) {
   const dots = getDotsForNumber(value);
   return (
-    <Svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} onPress={() => onHold(id)}>
+    <Svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} onPress={() => onHold?.(id)}>
       <Rect
         key={`rect-${id}-held`}
         x={0}
@@ -140,10 +140,10 @@ function Die2D({ id, value, size, isHeld, onHold }: { id: string, value: number,
       />
       <Rect
         key={`rect-${id}`}
-        x={5}
-        y={5}
-        width={size - 10}
-        height={size - 10}
+        x={size * 0.05}
+        y={size * 0.05}
+        width={size - size * 0.1}
+        height={size - size * 0.1}
         fill="white"
       />
       {dots.map((dot, index) => (
@@ -158,8 +158,6 @@ function RollingSimulator() {
 
   useEffect(() => {
     const rollingDice = dice.filter((die) => die.status === DieStatus.ROLLING);
-    console.log('Rolling dice', rollingDice);
-
 
     if (rollingDice.length > 0) {
       rollingDice.forEach((die) => {
@@ -183,6 +181,39 @@ function ThrowDieButton() {
   );
 }
 
+function RollResultView({ key, roll }: { key: string, roll: RollResult }) {
+  return (
+    <View key={key} style={styles.rollResult}>
+      {roll.dice.map((die) => (
+        <Die2D
+          id={`${key}-${die.id}`}
+          value={die.value}
+          size={25}
+        />
+      ))}
+    </View>
+  );
+}
+
+function ScoredDice() {
+  const { rolls } = useGameStore();
+  return (
+    <View style={styles.scoredDice}>
+      {rolls.map((roll, index) => (
+        <RollResultView key={`roll-${index}`} roll={roll} />
+      ))}
+    </View>
+  );
+}
+
+function KeepDiceButton() {
+  const { completeRoll, permissions } = useGameStore();
+
+  return (
+    <Button title="Keep" onPress={completeRoll} disabled={!permissions.canCompleteRoll} />
+  );
+}
+
 // Display the dice that have been thrown or are resting.
 function Playfield() {
   const { dice, toggleHold, permissions } = useGameStore();
@@ -196,9 +227,7 @@ function Playfield() {
   console.log('Playfield', dice, permissions);
 
   const handleHold = (id: string) => {
-    console.log('handleHold', id);
     if (!permissions.canHoldDice) {
-      console.log('cannot hold die');
       return;
     }
     toggleHold(id);
@@ -231,9 +260,11 @@ function Game() {
       <Text style={styles.text}>Game</Text>
       <Scoreboard />
       <TurnStatus />
+      <ScoredDice />
       <Playfield />
       {permissions.canThrowDie && <ThrowDieButton />}
       <RollingSimulator />
+      {permissions.canCompleteRoll && <KeepDiceButton />}
       <QuitGameButton />
     </>
   );
@@ -322,4 +353,21 @@ const styles = StyleSheet.create({
     padding: 10,
     backgroundColor: 'green',
   },
+  scoredDice: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    height: 60,
+    gap: 20,
+    padding: 10,
+    backgroundColor: '#999999',
+  },
+  rollResult: {
+    height: 40,
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: 20,
+    padding: 10,
+    backgroundColor: 'blue',
+  }
 });

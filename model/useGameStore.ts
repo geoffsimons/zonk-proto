@@ -33,7 +33,10 @@ const useGameStore = create<GameState>((set, get) => ({
 
     const { isValidHold, points } = pointsForDice(heldDice);
 
-    console.log('updatePermissions', dice);
+    console.log('updatePermissions dice:', dice);
+    console.log('heldDice', heldDice);
+    console.log('isValidHold', isValidHold);
+    console.log('points', points);
 
     set({
       permissions: {
