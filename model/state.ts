@@ -28,6 +28,15 @@ export interface DieState {
   status: DieStatus;
 }
 
+export enum TurnState {
+  READY = 'ready',
+  IN_PROGRESS = 'in_progress',
+  COMPLETE = 'complete',
+  BUSTED = 'busted',
+  // We might not need spaz, because we can calculate from the dice states.
+  // SPAZ = 'spaz',
+}
+
 export interface RollResult {
   dice: DieState[];
   // The points that were scored.
@@ -38,6 +47,8 @@ export interface RollResult {
 export interface GamePermissions {
   canAddPlayer: (name: string) => boolean;
   canStartGame: boolean;
+  canStartTurn: boolean;
+  canAdvancePlayer: boolean;
   canCompleteRoll: boolean;
   canThrowDie: boolean;
   canHoldDice: boolean;
@@ -53,6 +64,8 @@ export interface GameState {
   dice: DieState[];
   rolls: RollResult[];
 
+  turnState: TurnState;
+
   permissions: GamePermissions;
   updatePermissions: () => void;
   addPlayer: (id: string, name: string) => void;
@@ -60,7 +73,7 @@ export interface GameState {
   startGame: () => void;
   startPlayerTurn: () => void;
   startLevel: () => void;
-  endPlayerTurn: () => void;
+  advancePlayer: () => void;
   bankPoints: () => void;
   startRolling: () => void;
   setDiceStatus: (ids: string[], status: DieStatus) => void;

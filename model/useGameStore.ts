@@ -1,6 +1,6 @@
 import { create } from 'zustand';
-import { pointsForDice } from './rules';
-import { DieStatus, GameState, RollResult } from './state';
+import { isBusted, pointsForDice } from './rules';
+import { DieStatus, GameState, RollResult, TurnState } from './state';
 
 const useGameStore = create<GameState>((set, get) => ({
   players: [],
@@ -8,44 +8,52 @@ const useGameStore = create<GameState>((set, get) => ({
   round: 0,
   dice: ['die-1', 'die-2', 'die-3', 'die-4', 'die-5'].map((id) => ({ id, value: 0, status: DieStatus.READY })),
   rolls: [] as RollResult[],
-  currentPlayerIndex: 0,
+  // -1 means we have not started yet.
+  currentPlayerIndex: -1,
   // Level 0 is a pre-turn state.
   level: 0,
   points: 0,
+  turnState: TurnState.READY,
   permissions: {
     canAddPlayer: name => name.length > 0,
     canStartGame: false,
+    canStartTurn: false,
     canCompleteRoll: false,
     canThrowDie: false,
     canHoldDice: false,
     canBankPoints: false,
+    canAdvancePlayer: false,
   },
 
   updatePermissions: () => {
-    const { dice, round, currentPlayerIndex, players } = get();
+    const { dice, round, turnState, players } = get();
     const diceInHand = dice.filter((die) => die.status === DieStatus.IN_HAND);
     const heldDice = dice.filter((die) => die.status === DieStatus.HELD);
     const rollingDice = dice.filter((die) => die.status === DieStatus.ROLLING);
     const restingDice = dice.filter((die) => die.status === DieStatus.RESTING);
-    const spazDice = dice.filter((die) => die.status === DieStatus.SPAZ);
-    const scoredDice = dice.filter((die) => die.status === DieStatus.SCORED);
-    const readyDice = dice.filter((die) => die.status === DieStatus.READY);
 
-    const { isValidHold, points } = pointsForDice(heldDice);
+    const activeDice = [...heldDice, ...restingDice];
+
+    const { isValidHold, points: heldPoints } = pointsForDice(heldDice);
+    const { points: activePoints } = pointsForDice(activeDice);
 
     console.log('updatePermissions dice:', dice);
-    console.log('heldDice', heldDice);
-    console.log('isValidHold', isValidHold);
-    console.log('points', points);
+    // console.log('heldDice', heldDice);
+    // console.log('isValidHold', isValidHold);
+    console.log('activeDice', activeDice);
+    console.log('heldPoints', heldPoints);
+    console.log('activePoints', activePoints);
 
     set({
       permissions: {
         canAddPlayer: name => name.length > 0 && players.find((player) => player.name === name) === undefined,
         canStartGame: round === 0 && players.length > 0,
-        canCompleteRoll: heldDice.length > 0 && isValidHold,
-        canThrowDie: diceInHand.length > 0 && rollingDice.length === 0,
-        canHoldDice: restingDice.length > 0 && diceInHand.length === 0 && rollingDice.length === 0,
-        canBankPoints: points > 0 && round > 1,
+        canStartTurn: turnState !== TurnState.IN_PROGRESS,
+        canCompleteRoll: turnState === TurnState.IN_PROGRESS && heldDice.length > 0 && isValidHold,
+        canThrowDie: turnState === TurnState.IN_PROGRESS && diceInHand.length > 0 && rollingDice.length === 0,
+        canHoldDice: turnState === TurnState.IN_PROGRESS && restingDice.length > 0 && diceInHand.length === 0 && rollingDice.length === 0,
+        canBankPoints: turnState === TurnState.IN_PROGRESS && activePoints > 0, // && round > 1,
+        canAdvancePlayer: turnState === TurnState.COMPLETE || turnState === TurnState.BUSTED,
       },
     });
   },
@@ -81,6 +89,7 @@ const useGameStore = create<GameState>((set, get) => ({
     set({
       points: 0,
       level: 0,
+      turnState: TurnState.IN_PROGRESS,
     });
     updatePermissions();
     startLevel();
@@ -97,21 +106,25 @@ const useGameStore = create<GameState>((set, get) => ({
     startRolling();
   },
 
-  endPlayerTurn: () => {
-    // Determnine if the game is complete.
-    // If currentPlayerIndex is the last player, advance the next round.
-    const { currentPlayerIndex, players, round, updatePermissions } = get();
+  advancePlayer: () => {
+    const { currentPlayerIndex, players, round, startPlayerTurn, updatePermissions } = get();
     set({
-      round: currentPlayerIndex === players.length - 1 ? round + 1 : round,
       currentPlayerIndex: (currentPlayerIndex + 1) % players.length,
+      round: currentPlayerIndex === players.length - 1 ? round + 1 : round,
     });
     updatePermissions();
+    startPlayerTurn();
   },
 
   bankPoints: () => {
-    const { currentPlayerIndex, players, points, updatePermissions } = get();
+    const { dice, currentPlayerIndex, players, points, updatePermissions } = get();
+    // Calculate points from current roll.
+    const activeDice = dice.filter((die) => die.status === DieStatus.RESTING || die.status === DieStatus.HELD);
+    const rollPoints = pointsForDice(activeDice).points;
     set({
-      players: players.map((player, index) => index === currentPlayerIndex ? { ...player, score: player.score + points } : player),
+      players: players.map((player, index) => index === currentPlayerIndex ? { ...player, score: player.score + rollPoints } : player),
+      points: points + rollPoints,
+      turnState: TurnState.COMPLETE,
     });
     updatePermissions();
   },
@@ -132,9 +145,22 @@ const useGameStore = create<GameState>((set, get) => ({
 
   // Bulk update the status of multiple dice.
   setDiceStatus: (ids: string[], status: DieStatus) => {
-    const { dice, updatePermissions } = get();
+    const { dice, turnState, updatePermissions } = get();
+    const newDice = dice.map((die) => ids.includes(die.id) ? { ...die, status } : die);
+
+    console.log('setDiceStatus newDice:', newDice);
+
+    // If there are no dice in hand, and all dice are resting, check if the player is busted.
+    const diceInHand = newDice.filter((die) => die.status === DieStatus.IN_HAND);
+    const rollingDice = newDice.filter((die) => die.status === DieStatus.ROLLING);
+    const restingDice = newDice.filter((die) => die.status === DieStatus.RESTING);
+    const playerBusted = diceInHand.length === 0 && rollingDice.length === 0 && isBusted(restingDice);
+
+    console.log('setDiceStatus playerBusted:', playerBusted);
+
     set({
-      dice: dice.map((die) => ids.includes(die.id) ? { ...die, status } : die),
+      dice: newDice,
+      turnState: playerBusted ? TurnState.BUSTED : turnState,
     });
     updatePermissions();
   },
@@ -172,19 +198,29 @@ const useGameStore = create<GameState>((set, get) => ({
   },
 
   completeRoll: () => {
-    const { dice, points, rolls, updatePermissions } = get();
+    const { dice, points, rolls, startLevel, startRolling, updatePermissions } = get();
     const heldDice = dice.filter((die) => die.status === DieStatus.HELD);
+    const restingDice = dice.filter((die) => die.status === DieStatus.RESTING);
     // Collect the held dice and calculate the points.
     const rollResult: RollResult = {
       dice: heldDice,
       points: pointsForDice(heldDice).points,
     };
+
+    // Does this roll complete a level?
+    const isLevelComplete = restingDice.length === 0;
+
     set({
       rolls: [...rolls, rollResult],
       dice: dice.map((die) => heldDice.includes(die) ? { ...die, status: DieStatus.SCORED } : die),
       points: points + rollResult.points,
     });
     updatePermissions();
+    if (isLevelComplete) {
+      startLevel();
+    } else {
+      startRolling();
+    }
   },
 
   resetDice: () => {

@@ -14,6 +14,7 @@ import { Button, StyleSheet, Text, TextInput, View } from 'react-native';
 import { showConfirmDialog } from '@/components/ConfirmDialog';
 import { getDotsForNumber } from '@/components/Die';
 import IconButton from '@/components/IconButton';
+import { pointsForDice } from '@/model/rules';
 import { DieStatus, RollResult } from '@/model/state';
 import { nanoid } from 'nanoid';
 import Svg, { Circle, Rect } from 'react-native-svg';
@@ -33,14 +34,16 @@ function Scoreboard() {
 }
 
 function TurnStatus() {
-  const { dice, currentPlayerIndex, players, points, level } = useGameStore();
+  const { dice, turnState, currentPlayerIndex, players, points, level } = useGameStore();
   const currentPlayer = players[currentPlayerIndex];
   const diceInHand = dice.filter((die) => die.status === DieStatus.IN_HAND);
+  const activeDice = dice.filter((die) => die.status === DieStatus.HELD || die.status === DieStatus.RESTING);
+  const { points: activePoints } = pointsForDice(activeDice);
   return (
     <View style={styles.turnStatus}>
-      <Text style={styles.text}>{currentPlayer.name}'s Turn</Text>
+      <Text style={styles.text}>Player {currentPlayer.name}: {turnState}</Text>
       <Text style={styles.text}>Level {level}</Text>
-      <Text style={styles.text}>Points {points}</Text>
+      <Text style={styles.text}>Points {points} + {activePoints} = {points + activePoints}</Text>
       <Text style={styles.text}>{diceInHand.length} dice in hand</Text>
     </View>
   );
@@ -214,6 +217,20 @@ function KeepDiceButton() {
   );
 }
 
+function StartTurnButton() {
+  const { advancePlayer, permissions } = useGameStore();
+  return (
+    <Button title="Next Player" onPress={advancePlayer} disabled={!permissions.canAdvancePlayer} />
+  );
+}
+
+function BankPointsButton() {
+  const { bankPoints, permissions } = useGameStore();
+  return (
+    <Button title="Bank Points" onPress={bankPoints} disabled={!permissions.canBankPoints} />
+  );
+}
+
 // Display the dice that have been thrown or are resting.
 function Playfield() {
   const { dice, toggleHold, permissions } = useGameStore();
@@ -259,12 +276,15 @@ function Game() {
     <>
       <Text style={styles.text}>Game</Text>
       <Scoreboard />
+      <Text style={styles.text}>Round {round}</Text>
       <TurnStatus />
       <ScoredDice />
       <Playfield />
       {permissions.canThrowDie && <ThrowDieButton />}
       <RollingSimulator />
       {permissions.canCompleteRoll && <KeepDiceButton />}
+      {permissions.canStartTurn && <StartTurnButton />}
+      {permissions.canBankPoints && <BankPointsButton />}
       <QuitGameButton />
     </>
   );
@@ -340,7 +360,7 @@ const styles = StyleSheet.create({
     borderRadius: 10,
   },
   turnStatus: {
-    flexDirection: 'row',
+    flexDirection: 'column',
     justifyContent: 'space-between',
     padding: 10,
   },
