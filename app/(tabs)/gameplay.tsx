@@ -43,7 +43,7 @@ function TurnStatus() {
     <View style={styles.turnStatus}>
       <Text style={styles.text}>Player {currentPlayer.name}: {turnState}</Text>
       <Text style={styles.text}>Level {level}</Text>
-      <Text style={styles.text}>Points {points} + {activePoints} = {points + activePoints}</Text>
+      <Text style={styles.text}>Points: {points} Active: {activePoints}</Text>
       <Text style={styles.text}>{diceInHand.length} dice in hand</Text>
     </View>
   );
@@ -210,10 +210,12 @@ function ScoredDice() {
 }
 
 function KeepDiceButton() {
-  const { completeRoll, permissions } = useGameStore();
-
+  const { dice, completeRoll, permissions } = useGameStore();
+  // How many dice are still resting after holds.
+  const restingDice = dice.filter((die) => die.status === DieStatus.RESTING);
+  const numResting = restingDice.length;
   return (
-    <Button title="Keep" onPress={completeRoll} disabled={!permissions.canCompleteRoll} />
+    <Button title={`Roll ${numResting} Dice`} onPress={completeRoll} disabled={!permissions.canCompleteRoll} />
   );
 }
 
