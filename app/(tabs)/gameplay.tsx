@@ -62,7 +62,6 @@ function AddPlayerForm() {
 
   return (
     <>
-      <Text style={styles.text}>Add Player</Text>
       <View style={styles.form}>
         <View style={styles.formGroup}>
           <Text style={styles.label}>Name</Text>
@@ -118,7 +117,6 @@ function PreGame() {
   if (round === 0) {
     return (
       <View style={styles.container}>
-        <Text style={styles.text}>Pre-Game</Text>
         <AddPlayerForm />
         <PlayerList />
         <Button title="Start Game" disabled={!permissions.canStartGame} onPress={startGame} />
@@ -376,6 +374,7 @@ const styles = StyleSheet.create({
     height: 120,
     flexDirection: 'row',
     flexWrap: 'wrap',
+    flexGrow: 1,
     justifyContent: 'center',
     gap: 20,
     padding: 10,

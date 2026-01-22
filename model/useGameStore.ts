@@ -44,6 +44,8 @@ const useGameStore = create<GameState>((set, get) => ({
     console.log('heldPoints', heldPoints);
     console.log('activePoints', activePoints);
 
+    const isRollComplete = diceInHand.length === 0 && rollingDice.length === 0;
+
     set({
       permissions: {
         canAddPlayer: name => name.length > 0 && players.find((player) => player.name === name) === undefined,
@@ -51,8 +53,8 @@ const useGameStore = create<GameState>((set, get) => ({
         canStartTurn: turnState !== TurnState.IN_PROGRESS,
         canCompleteRoll: turnState === TurnState.IN_PROGRESS && heldDice.length > 0 && isValidHold,
         canThrowDie: turnState === TurnState.IN_PROGRESS && diceInHand.length > 0 && rollingDice.length === 0,
-        canHoldDice: turnState === TurnState.IN_PROGRESS && restingDice.length > 0 && diceInHand.length === 0 && rollingDice.length === 0,
-        canBankPoints: turnState === TurnState.IN_PROGRESS && activePoints > 0, // && round > 1,
+        canHoldDice: turnState === TurnState.IN_PROGRESS && restingDice.length > 0 && isRollComplete,
+        canBankPoints: turnState === TurnState.IN_PROGRESS && activePoints > 0 && isRollComplete,
         canAdvancePlayer: turnState === TurnState.COMPLETE || turnState === TurnState.BUSTED,
       },
     });
