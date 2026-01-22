@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { isBusted, pointsForDice } from './rules';
-import { DieStatus, GameState, RollResult, TurnState } from './state';
+import { DieStatus, GameState, RollResult, TurnState, VICTORY_SCORE } from './state';
 
 const useGameStore = create<GameState>((set, get) => ({
   players: [],
@@ -10,6 +10,7 @@ const useGameStore = create<GameState>((set, get) => ({
   rolls: [] as RollResult[],
   // -1 means we have not started yet.
   currentPlayerIndex: -1,
+  winner: null,
   // Level 0 is a pre-turn state.
   level: 0,
   points: 0,
@@ -26,7 +27,7 @@ const useGameStore = create<GameState>((set, get) => ({
   },
 
   updatePermissions: () => {
-    const { dice, round, turnState, players } = get();
+    const { dice, round, turnState, players, winner } = get();
     const diceInHand = dice.filter((die) => die.status === DieStatus.IN_HAND);
     const heldDice = dice.filter((die) => die.status === DieStatus.HELD);
     const rollingDice = dice.filter((die) => die.status === DieStatus.ROLLING);
@@ -49,13 +50,13 @@ const useGameStore = create<GameState>((set, get) => ({
     set({
       permissions: {
         canAddPlayer: name => name.length > 0 && players.find((player) => player.name === name) === undefined,
-        canStartGame: round === 0 && players.length > 0,
-        canStartTurn: turnState !== TurnState.IN_PROGRESS,
+        canStartGame: !winner || (round === 0 && players.length > 0),
+        canStartTurn: !winner && turnState !== TurnState.IN_PROGRESS,
         canCompleteRoll: turnState === TurnState.IN_PROGRESS && heldDice.length > 0 && isValidHold,
         canThrowDie: turnState === TurnState.IN_PROGRESS && diceInHand.length > 0 && rollingDice.length === 0,
         canHoldDice: turnState === TurnState.IN_PROGRESS && restingDice.length > 0 && isRollComplete,
         canBankPoints: turnState === TurnState.IN_PROGRESS && activePoints > 0 && isRollComplete,
-        canAdvancePlayer: turnState === TurnState.COMPLETE || turnState === TurnState.BUSTED,
+        canAdvancePlayer: !winner && (turnState === TurnState.COMPLETE || turnState === TurnState.BUSTED),
       },
     });
   },
@@ -76,10 +77,12 @@ const useGameStore = create<GameState>((set, get) => ({
   },
 
   startGame: () => {
-    const { startPlayerTurn, updatePermissions} = get();
+    const { players, startPlayerTurn, updatePermissions} = get();
     set({
       round: 1,
       currentPlayerIndex: 0,
+      players: players.map((player) => ({ ...player, score: 0 })),
+      winner: null,
     });
     updatePermissions();
     startPlayerTurn();
@@ -119,15 +122,44 @@ const useGameStore = create<GameState>((set, get) => ({
   },
 
   bankPoints: () => {
-    const { dice, currentPlayerIndex, players, points, updatePermissions } = get();
+    const { dice, currentPlayerIndex, players, points, updatePermissions, checkForVictory } = get();
+    console.log('bankPoints', currentPlayerIndex, players[currentPlayerIndex].score);
+
     // Calculate points from current roll.
     const activeDice = dice.filter((die) => die.status === DieStatus.RESTING || die.status === DieStatus.HELD);
     const rollPoints = pointsForDice(activeDice).points;
+    const newScore = players[currentPlayerIndex].score + points + rollPoints;
     set({
-      players: players.map((player, index) => index === currentPlayerIndex ? { ...player, score: player.score + points + rollPoints } : player),
+      players: players.map((player, index) => index === currentPlayerIndex ? { ...player, score: newScore } : player),
       points: points + rollPoints,
       turnState: TurnState.COMPLETE,
     });
+    updatePermissions();
+    checkForVictory();
+  },
+
+  checkForVictory: () => {
+    const { currentPlayerIndex, players, updatePermissions } = get();
+    let winner = null;
+    if (currentPlayerIndex === players.length - 1) {
+      console.log('Checking for victory...', players);
+      // Check for victory.
+      let highIndex = 0;
+      let highScore = 0;
+      for (let i = 0; i < players.length; i++) {
+        if (players[i].score > highScore) {
+          highScore = players[i].score;
+          highIndex = i;
+        }
+      }
+      if (highScore >= VICTORY_SCORE) {
+        winner = players[highIndex];
+      }
+      console.log('highIndex', highIndex);
+      console.log('highScore', highScore);
+      console.log('Victory check complete. Winner:', winner);
+    }
+    set({ winner: winner });
     updatePermissions();
   },
 
@@ -147,7 +179,7 @@ const useGameStore = create<GameState>((set, get) => ({
 
   // Bulk update the status of multiple dice.
   setDiceStatus: (ids: string[], status: DieStatus) => {
-    const { dice, turnState, updatePermissions } = get();
+    const { dice, turnState, updatePermissions, checkForVictory } = get();
     const newDice = dice.map((die) => ids.includes(die.id) ? { ...die, status } : die);
 
     console.log('setDiceStatus newDice:', newDice);
@@ -165,6 +197,9 @@ const useGameStore = create<GameState>((set, get) => ({
       turnState: playerBusted ? TurnState.BUSTED : turnState,
     });
     updatePermissions();
+    if (playerBusted) {
+      checkForVictory();
+    }
   },
 
   setDieValue: (id: string, value: number) => {

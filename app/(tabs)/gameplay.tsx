@@ -93,6 +93,20 @@ function PlayerList() {
   );
 }
 
+function StartNewGameButton() {
+  const { quitGame } = useGameStore();
+  return (
+    <Button title="Reset and Start New Game" onPress={quitGame} />
+  );
+}
+
+function RematchButton() {
+  const { startGame } = useGameStore();
+  return (
+    <Button title="Rematch" onPress={startGame} />
+  );
+}
+
 function QuitGameButton() {
   const { quitGame } = useGameStore();
 
@@ -265,8 +279,17 @@ function Playfield() {
   );
 }
 
+function Winner() {
+  const { winner } = useGameStore();
+  return (
+    <View style={styles.container}>
+      <Text style={styles.text}>Winner: {winner?.name ?? 'Unknown'}</Text>
+    </View>
+  );
+}
+
 function Game() {
-  const { permissions, round } = useGameStore();
+  const { permissions, round, winner } = useGameStore();
 
   if (round === 0) {
     return null;
@@ -276,7 +299,8 @@ function Game() {
     <>
       <Scoreboard />
       <Text style={styles.text}>Round {round}</Text>
-      <TurnStatus />
+      {!winner && <TurnStatus />}
+      {winner && <Winner />}
       <ScoredDice />
       <Playfield />
       {permissions.canThrowDie && <ThrowDieButton />}
@@ -284,7 +308,9 @@ function Game() {
       {permissions.canCompleteRoll && <KeepDiceButton />}
       {permissions.canStartTurn && <StartTurnButton />}
       {permissions.canBankPoints && <BankPointsButton />}
-      <QuitGameButton />
+      {!winner && <QuitGameButton />}
+      {winner && <RematchButton />}
+      {winner && <StartNewGameButton />}
     </>
   );
 }

@@ -1,3 +1,5 @@
+export const VICTORY_SCORE = 1000;
+
 export interface Player {
   id: string;
   name: string;
@@ -63,6 +65,7 @@ export interface GameState {
   level: number;
   dice: DieState[];
   rolls: RollResult[];
+  winner: Player | null;
 
   turnState: TurnState;
 
@@ -83,4 +86,5 @@ export interface GameState {
   completeRoll: () => void;
   resetDice: () => void;
   quitGame: () => void;
+  checkForVictory: () => void;
 }
