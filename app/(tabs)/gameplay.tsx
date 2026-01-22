@@ -20,11 +20,11 @@ import { nanoid } from 'nanoid';
 import Svg, { Circle, Rect } from 'react-native-svg';
 
 function Scoreboard() {
-  const { players } = useGameStore();
+  const { currentPlayerIndex,players } = useGameStore();
   return (
     <View style={styles.scoreboard}>
-      {players.map((player) => (
-        <View style={styles.player} key={player.id}>
+      {players.map((player, index) => (
+        <View style={[styles.player, index === currentPlayerIndex ? styles.currentPlayer : '']} key={player.id}>
           <Text style={styles.name}>{player.name}</Text>
           <Text style={styles.score}>{player.score}</Text>
         </View>
@@ -213,7 +213,7 @@ function KeepDiceButton() {
   const { dice, completeRoll, permissions } = useGameStore();
   // How many dice are still resting after holds.
   const restingDice = dice.filter((die) => die.status === DieStatus.RESTING);
-  const numResting = restingDice.length;
+  const numResting = restingDice.length > 0 ? restingDice.length : 5;
   return (
     <Button title={`Roll ${numResting} Dice`} onPress={completeRoll} disabled={!permissions.canCompleteRoll} />
   );
@@ -276,7 +276,6 @@ function Game() {
 
   return (
     <>
-      <Text style={styles.text}>Game</Text>
       <Scoreboard />
       <Text style={styles.text}>Round {round}</Text>
       <TurnStatus />
@@ -295,7 +294,6 @@ function Game() {
 export default function Gameplay() {
   return (
     <View style={styles.container}>
-      <Text style={styles.text}>Zonk</Text>
       <PreGame />
       <Game />
     </View>
@@ -309,7 +307,7 @@ const styles = StyleSheet.create({
   },
   text: {
     color: '#fff',
-    fontSize: 40,
+    fontSize: 20,
     fontWeight: 'bold',
     textAlign: 'center',
   },
@@ -326,6 +324,11 @@ const styles = StyleSheet.create({
     margin: 10,
     flexDirection: 'row',
     justifyContent: 'space-between',
+  },
+  currentPlayer: {
+    outlineWidth: 4,
+    outlineColor: 'yellow',
+    outlineStyle: 'solid',
   },
   playerRow: {
     flexDirection: 'row',
@@ -354,6 +357,9 @@ const styles = StyleSheet.create({
   },
   label: {
     fontSize: 20,
+    fontWeight: 'bold',
+    textAlign: 'right',
+    color: '#fff',
   },
   input: {
     flex: 1,

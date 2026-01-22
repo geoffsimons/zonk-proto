@@ -122,7 +122,7 @@ const useGameStore = create<GameState>((set, get) => ({
     const activeDice = dice.filter((die) => die.status === DieStatus.RESTING || die.status === DieStatus.HELD);
     const rollPoints = pointsForDice(activeDice).points;
     set({
-      players: players.map((player, index) => index === currentPlayerIndex ? { ...player, score: player.score + rollPoints } : player),
+      players: players.map((player, index) => index === currentPlayerIndex ? { ...player, score: player.score + points + rollPoints } : player),
       points: points + rollPoints,
       turnState: TurnState.COMPLETE,
     });
