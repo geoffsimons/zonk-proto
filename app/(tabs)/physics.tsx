@@ -2,7 +2,7 @@ import Box from '@/components/Box';
 import { RigidDie } from '@/components/Die';
 import LoadingView from '@/components/LoadingView';
 import OutOfBounds from '@/components/OutOfBounds';
-import { calculateCameraPositionFromAngles } from '@/lib/math';
+import { calculateCameraPositionFromAngles, calculateInitialVelocity } from '@/lib/math';
 import type { OrbitControlsChangeEvent } from '@react-three/drei/core';
 import { OrbitControls, PerspectiveCamera } from '@react-three/drei/native';
 import { Canvas } from '@react-three/fiber/native';
@@ -69,59 +69,6 @@ function Playfield({ onPlayfieldStateChange, playfieldState }: PlayfieldProps) {
   )
 }
 
-// The minimum magnitude of the initial velocity.
-const MIN_VELOCITY = 5;
-// The maximum magnitude of the initial velocity.
-const MAX_VELOCITY = 25;
-
-// TODO: Use angular deviation instead of linear deviation.
-const MAX_DEVIATION = 5;
-
-function calculateInitialVelocity(power: number, accuracy: number, origin: [number, number, number]): [number, number, number] {
-  console.log('Calculating initial velocity with power:', power, 'and accuracy:', accuracy, 'and origin:', origin);
-  // The perfect initial velocity has x and z components that point from the origin to 0,0. The y component is 0.
-  // Power maps to the magnitude of the velocity. Power of 100 yields MAX_VELOCITY. Power of 0 yields MIN_VELOCITY.
-  const magnitude = MIN_VELOCITY + (MAX_VELOCITY - MIN_VELOCITY) * power / 100;
-  console.log('Magnitude', magnitude);
-
-  // Calculate the direction of the velocity with some randomness based on the accuracy.
-
-  const deviation = MAX_DEVIATION * accuracy;
-  console.log('Deviation magnitude', deviation);
-
-  const [x, y, z] = origin;
-
-  const target = [0, 0, 0];
-  const deviatedTarget = [
-    target[0] + (-0.5 + Math.random()) * deviation,
-    target[1] + (-0.5 + Math.random()) * deviation,
-    target[2] + (-0.5 + Math.random()) * deviation,
-  ];
-
-  console.log('Deviated target', deviatedTarget);
-
-  const direction = [
-    deviatedTarget[0] - x,
-    deviatedTarget[1] - y,
-    deviatedTarget[2] - z,
-  ];
-
-  console.log('Direction', direction);
-
-  const directionLength = Math.sqrt(direction[0]**2 + direction[1]**2 + direction[2]**2);
-
-  const normalizedDirection = [direction[0] / directionLength, direction[1] / directionLength, direction[2] / directionLength];
-  console.log('Normalized direction', normalizedDirection);
-
-  const velocityX = magnitude * (normalizedDirection[0]);
-  const velocityY = magnitude * (normalizedDirection[1]);
-  const velocityZ = magnitude * (normalizedDirection[2]);
-
-  const velocity = [velocityX, velocityY, velocityZ];
-  console.log('Velocity', velocity);
-  return velocity as [number, number, number];
-}
-
 const INITIAL_CAMERA_POSITION = [0, 20, 20] as [number, number, number];
 
 function SceneView() {
@@ -158,7 +105,7 @@ function SceneView() {
     const power = 80;
     const accuracy = 0.6;
 
-    const initialVelocity = calculateInitialVelocity(power, accuracy, origin);
+    const initialVelocity = calculateInitialVelocity({ power, accuracy, origin: dieOrigin });
 
     const newDie: DieState = { id, origin: dieOrigin, initialVelocity, isResting: false, result: 0, isSpaz: false };
 
