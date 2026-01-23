@@ -35,15 +35,8 @@ const useGameStore = create<GameState>((set, get) => ({
 
     const activeDice = [...heldDice, ...restingDice];
 
-    const { isValidHold, points: heldPoints } = pointsForDice(heldDice);
+    const { isValidHold } = pointsForDice(heldDice);
     const { points: activePoints } = pointsForDice(activeDice);
-
-    console.log('updatePermissions dice:', dice);
-    // console.log('heldDice', heldDice);
-    // console.log('isValidHold', isValidHold);
-    console.log('activeDice', activeDice);
-    console.log('heldPoints', heldPoints);
-    console.log('activePoints', activePoints);
 
     const isRollComplete = diceInHand.length === 0 && rollingDice.length === 0;
 
@@ -64,14 +57,12 @@ const useGameStore = create<GameState>((set, get) => ({
   // Pre-game actions. ----------------------------------------------------------
   addPlayer: (id: string, name: string) => {
     const { players, updatePermissions } = get();
-    console.log('addPlayer', id, name);
     set({ players: [...players, { id, name, score: 0 }] });
     updatePermissions();
   },
 
   removePlayer: (id: string) => {
     const { players, updatePermissions } = get();
-    console.log('removePlayer', id);
     set({ players: players.filter((player) => player.id !== id) });
     updatePermissions();
   },
@@ -123,7 +114,6 @@ const useGameStore = create<GameState>((set, get) => ({
 
   bankPoints: () => {
     const { dice, currentPlayerIndex, players, points, updatePermissions, checkForVictory } = get();
-    console.log('bankPoints', currentPlayerIndex, players[currentPlayerIndex].score);
 
     // Calculate points from current roll.
     const activeDice = dice.filter((die) => die.status === DieStatus.RESTING || die.status === DieStatus.HELD);
@@ -142,7 +132,6 @@ const useGameStore = create<GameState>((set, get) => ({
     const { currentPlayerIndex, players, updatePermissions } = get();
     let winner = null;
     if (currentPlayerIndex === players.length - 1) {
-      console.log('Checking for victory...', players);
       // Check for victory.
       let highIndex = 0;
       let highScore = 0;
@@ -155,9 +144,6 @@ const useGameStore = create<GameState>((set, get) => ({
       if (highScore >= VICTORY_SCORE) {
         winner = players[highIndex];
       }
-      console.log('highIndex', highIndex);
-      console.log('highScore', highScore);
-      console.log('Victory check complete. Winner:', winner);
     }
     set({ winner: winner });
     updatePermissions();
@@ -182,15 +168,11 @@ const useGameStore = create<GameState>((set, get) => ({
     const { dice, turnState, updatePermissions, checkForVictory } = get();
     const newDice = dice.map((die) => ids.includes(die.id) ? { ...die, status } : die);
 
-    console.log('setDiceStatus newDice:', newDice);
-
     // If there are no dice in hand, and all dice are resting, check if the player is busted.
     const diceInHand = newDice.filter((die) => die.status === DieStatus.IN_HAND);
     const rollingDice = newDice.filter((die) => die.status === DieStatus.ROLLING);
     const restingDice = newDice.filter((die) => die.status === DieStatus.RESTING);
     const playerBusted = diceInHand.length === 0 && rollingDice.length === 0 && isBusted(restingDice);
-
-    console.log('setDiceStatus playerBusted:', playerBusted);
 
     set({
       dice: newDice,
@@ -224,7 +206,6 @@ const useGameStore = create<GameState>((set, get) => ({
   // We can hold multiple dice at once, and there are some cases where you must hold 3 or more dice.
   // But the UI will update on a per-die basis.
   toggleHold: (id: string) => {
-    console.log('holdDie', id);
     const { dice, updatePermissions } = get();
     const isHeld = dice.find((die) => die.id === id)?.status === DieStatus.HELD;
     const newStatus = isHeld ? DieStatus.RESTING : DieStatus.HELD;

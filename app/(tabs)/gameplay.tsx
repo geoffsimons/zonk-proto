@@ -255,8 +255,6 @@ function Playfield() {
     die.status === DieStatus.HELD
   );
 
-  console.log('Playfield', dice, permissions);
-
   const handleHold = (id: string) => {
     if (!permissions.canHoldDice) {
       return;
