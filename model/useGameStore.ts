@@ -14,6 +14,8 @@ const useGameStore = create<GameState>((set, get) => ({
   // Level 0 is a pre-turn state.
   level: 0,
   points: 0,
+  holdingPoints: 0,
+  activePoints: 0,
   turnState: TurnState.READY,
   permissions: {
     canAddPlayer: name => name.length > 0,
@@ -52,6 +54,16 @@ const useGameStore = create<GameState>((set, get) => ({
         canAdvancePlayer: !winner && (turnState === TurnState.COMPLETE || turnState === TurnState.BUSTED),
       },
     });
+  },
+
+  updateRollPoints: () => {
+    const { dice } = get();
+    const heldDice = dice.filter((die) => die.status === DieStatus.HELD);
+    const restingDice = dice.filter((die) => die.status === DieStatus.RESTING);
+    const activeDice = [...heldDice, ...restingDice];
+    const { points: holdingPoints } = pointsForDice(heldDice);
+    const { points: activePoints } = pointsForDice(activeDice);
+    set({ holdingPoints, activePoints });
   },
 
   // Pre-game actions. ----------------------------------------------------------
@@ -165,7 +177,7 @@ const useGameStore = create<GameState>((set, get) => ({
 
   // Bulk update the status of multiple dice.
   setDiceStatus: (ids: string[], status: DieStatus) => {
-    const { dice, turnState, updatePermissions, checkForVictory } = get();
+    const { dice, turnState, updatePermissions, checkForVictory, updateRollPoints } = get();
     const newDice = dice.map((die) => ids.includes(die.id) ? { ...die, status } : die);
 
     // If there are no dice in hand, and all dice are resting, check if the player is busted.
@@ -179,16 +191,18 @@ const useGameStore = create<GameState>((set, get) => ({
       turnState: playerBusted ? TurnState.BUSTED : turnState,
     });
     updatePermissions();
+    updateRollPoints();
     if (playerBusted) {
       checkForVictory();
     }
   },
 
   setDieValue: (id: string, value: number) => {
-    const { dice } = get();
+    const { dice, updateRollPoints } = get();
     set({
       dice: dice.map((die) => die.id === id ? { ...die, value } : die),
     });
+    updateRollPoints();
   },
 
   throwDie: () => {
@@ -206,17 +220,18 @@ const useGameStore = create<GameState>((set, get) => ({
   // We can hold multiple dice at once, and there are some cases where you must hold 3 or more dice.
   // But the UI will update on a per-die basis.
   toggleHold: (id: string) => {
-    const { dice, updatePermissions } = get();
+    const { dice, updatePermissions, updateRollPoints } = get();
     const isHeld = dice.find((die) => die.id === id)?.status === DieStatus.HELD;
     const newStatus = isHeld ? DieStatus.RESTING : DieStatus.HELD;
     set({
       dice: dice.map((die) => die.id === id ? { ...die, status: newStatus } : die),
     });
     updatePermissions();
+    updateRollPoints();
   },
 
   completeRoll: () => {
-    const { dice, points, rolls, startLevel, startRolling, updatePermissions } = get();
+    const { dice, points, rolls, startLevel, startRolling, updatePermissions, updateRollPoints } = get();
     const heldDice = dice.filter((die) => die.status === DieStatus.HELD);
     const restingDice = dice.filter((die) => die.status === DieStatus.RESTING);
     // Collect the held dice and calculate the points.
@@ -234,6 +249,7 @@ const useGameStore = create<GameState>((set, get) => ({
       points: points + rollResult.points,
     });
     updatePermissions();
+    updateRollPoints();
     if (isLevelComplete) {
       startLevel();
     } else {

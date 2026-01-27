@@ -62,6 +62,8 @@ export interface GameState {
   round: number;
   currentPlayerIndex: number;
   points: number;
+  holdingPoints: number;
+  activePoints: number;
   level: number;
   dice: DieState[];
   rolls: RollResult[];
@@ -71,6 +73,7 @@ export interface GameState {
 
   permissions: GamePermissions;
   updatePermissions: () => void;
+  updateRollPoints: () => void;
   addPlayer: (id: string, name: string) => void;
   removePlayer: (id: string) => void;
   startGame: () => void;

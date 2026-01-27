@@ -9,16 +9,16 @@
 
 import { BankPointsButton, KeepDiceButton, QuitGameButton, RematchButton, StartNewGameButton, StartTurnButton, ThrowDieButton } from '@/components/ActionButtons';
 import Die2D from '@/components/Die2D';
+import GameStatus from '@/components/GameStatus';
 import PreGame from '@/components/PreGame';
 import RollingSimulator from '@/components/RollingSimulator';
 import Scoreboard from '@/components/Scoreboard';
 import ScoredDice from '@/components/ScoredDice';
-import TurnStatus from '@/components/TurnStatus';
 import Winner from '@/components/Winner';
 import { DieStatus } from '@/model/state';
 import useGameStore from '@/model/useGameStore';
 import React from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 
 // Display the dice that have been thrown or are resting.
 function Playfield() {
@@ -62,8 +62,7 @@ function Game() {
   return (
     <>
       <Scoreboard />
-      <Text style={styles.text}>Round {round}</Text>
-      <TurnStatus />
+      <GameStatus />
       <Winner />
       <ScoredDice />
       <Playfield />
