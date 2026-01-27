@@ -1,4 +1,4 @@
-import { Die } from '@/components/Die';
+import { Die } from '@/components/Die3D';
 import { calculateAnglesFromPosition, calculateCameraPositionFromAngles } from '@/lib/math';
 import { OrbitControls, PerspectiveCamera } from '@react-three/drei/native';
 import { Canvas, useFrame } from '@react-three/fiber/native';

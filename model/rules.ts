@@ -15,7 +15,6 @@ function scoreForCount(count: number, value: number): number {
 }
 
 export function pointsForDice(dice: DieState[]): { points: number, isValidHold: boolean } {
-  console.log('pointsForDice', dice);
   let availableDice = [...dice];
   let points = 0;
 
@@ -51,9 +50,6 @@ export function pointsForDice(dice: DieState[]): { points: number, isValidHold: 
 
   // Remove the 1s and 5s from the available dice, now that they have been scored.
   availableDice = availableDice.filter(d => d.value !== 1 && d.value !== 5);
-
-  console.log('pointsForDice points:', points);
-  console.log('pointsForDice availableDice:', availableDice);
 
   return { points, isValidHold: availableDice.length === 0 };
 }

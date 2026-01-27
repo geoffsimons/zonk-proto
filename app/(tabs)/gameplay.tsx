@@ -7,243 +7,18 @@
  * - Simulate multi-player games (as a pass and play mode on the single app...for now)
  */
 
+import { BankPointsButton, KeepDiceButton, QuitGameButton, RematchButton, StartNewGameButton, StartTurnButton, ThrowDieButton } from '@/components/ActionButtons';
+import Die2D from '@/components/Die2D';
+import PreGame from '@/components/PreGame';
+import RollingSimulator from '@/components/RollingSimulator';
+import Scoreboard from '@/components/Scoreboard';
+import ScoredDice from '@/components/ScoredDice';
+import TurnStatus from '@/components/TurnStatus';
+import Winner from '@/components/Winner';
+import { DieStatus } from '@/model/state';
 import useGameStore from '@/model/useGameStore';
-import React, { useEffect, useState } from 'react';
-import { Button, StyleSheet, Text, TextInput, View } from 'react-native';
-
-import { showConfirmDialog } from '@/components/ConfirmDialog';
-import { getDotsForNumber } from '@/components/Die';
-import IconButton from '@/components/IconButton';
-import { pointsForDice } from '@/model/rules';
-import { DieStatus, RollResult } from '@/model/state';
-import { nanoid } from 'nanoid';
-import Svg, { Circle, Rect } from 'react-native-svg';
-
-function Scoreboard() {
-  const { currentPlayerIndex,players } = useGameStore();
-  return (
-    <View style={styles.scoreboard}>
-      {players.map((player, index) => (
-        <View style={[styles.player, index === currentPlayerIndex ? styles.currentPlayer : '']} key={player.id}>
-          <Text style={styles.name}>{player.name}</Text>
-          <Text style={styles.score}>{player.score}</Text>
-        </View>
-      ))}
-    </View>
-  );
-}
-
-function TurnStatus() {
-  const { dice, turnState, currentPlayerIndex, players, points, level } = useGameStore();
-  const currentPlayer = players[currentPlayerIndex];
-  const diceInHand = dice.filter((die) => die.status === DieStatus.IN_HAND);
-  const activeDice = dice.filter((die) => die.status === DieStatus.HELD || die.status === DieStatus.RESTING);
-  const { points: activePoints } = pointsForDice(activeDice);
-  return (
-    <View style={styles.turnStatus}>
-      <Text style={styles.text}>Player {currentPlayer.name}: {turnState}</Text>
-      <Text style={styles.text}>Level {level}</Text>
-      <Text style={styles.text}>Points: {points} Active: {activePoints}</Text>
-      <Text style={styles.text}>{diceInHand.length} dice in hand</Text>
-    </View>
-  );
-}
-
-function AddPlayerForm() {
-  const { addPlayer, permissions } = useGameStore();
-  const [name, setName] = useState('');
-
-  const handleAddPlayer = () => {
-    addPlayer(nanoid(), name);
-    setName('');
-  };
-
-  const isPlayerNameValid = permissions.canAddPlayer(name);
-
-  return (
-    <>
-      <View style={styles.form}>
-        <View style={styles.formGroup}>
-          <Text style={styles.label}>Name</Text>
-          <TextInput style={styles.input} value={name} onChangeText={setName} />
-        </View>
-        <Button title="Add Player" disabled={!isPlayerNameValid} onPress={handleAddPlayer} />
-      </View>
-    </>
-  );
-}
-
-function PlayerList() {
-  const { players, removePlayer } = useGameStore();
-  return (
-    <>
-      <Text style={styles.text}>Player List</Text>
-      {players.map((player) => (
-        <View style={styles.playerRow} key={player.id}>
-          <Text style={styles.name}>{player.name}</Text>
-          <IconButton
-            name="close"
-            onPress={() => removePlayer(player.id)}
-            color="#ff4444"
-            size={24}
-          />
-        </View>
-      ))}
-    </>
-  );
-}
-
-function StartNewGameButton() {
-  const { quitGame } = useGameStore();
-  return (
-    <Button title="Reset and Start New Game" onPress={quitGame} />
-  );
-}
-
-function RematchButton() {
-  const { startGame } = useGameStore();
-  return (
-    <Button title="Rematch" onPress={startGame} />
-  );
-}
-
-function QuitGameButton() {
-  const { quitGame } = useGameStore();
-
-  const handleQuitPress = () => {
-    showConfirmDialog({
-      title: 'Quit Game',
-      message: 'Are you sure you want to quit the game?',
-      confirmText: 'Quit',
-      cancelText: 'Cancel',
-      onConfirm: quitGame,
-    });
-  };
-
-  return (
-    <Button title="Quit Game" onPress={handleQuitPress} />
-  );
-}
-
-function PreGame() {
-  const { permissions, round, startGame } = useGameStore();
-
-  if (round === 0) {
-    return (
-      <View style={styles.container}>
-        <AddPlayerForm />
-        <PlayerList />
-        <Button title="Start Game" disabled={!permissions.canStartGame} onPress={startGame} />
-      </View>
-    );
-  }
-  return null;
-}
-
-function Die2D({ id, value, size, isHeld = false, onHold }: { id: string, value: number, size: number, isHeld?: boolean, onHold?: (id: string) => void }) {
-  const dots = getDotsForNumber(value);
-  return (
-    <Svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} onPress={() => onHold?.(id)}>
-      <Rect
-        key={`rect-${id}-held`}
-        x={0}
-        y={0}
-        width={size}
-        height={size}
-        fill="yellow"
-        opacity={isHeld ? 1 : 0}
-      />
-      <Rect
-        key={`rect-${id}`}
-        x={size * 0.05}
-        y={size * 0.05}
-        width={size - size * 0.1}
-        height={size - size * 0.1}
-        fill="white"
-      />
-      {dots.map((dot, index) => (
-        <Circle key={`dot-${id}-${index}`} cx={size / 2 - dot[0] * size} cy={size / 2 - dot[1] * size} r={size * 0.1} fill="black" />
-      ))}
-    </Svg>
-  );
-}
-
-function RollingSimulator() {
-  const { dice, setDiceStatus, setDieValue } = useGameStore();
-
-  useEffect(() => {
-    const rollingDice = dice.filter((die) => die.status === DieStatus.ROLLING);
-
-    if (rollingDice.length > 0) {
-      rollingDice.forEach((die) => {
-        const newVal = Math.floor(Math.random() * 6) + 1;
-        setDieValue(die.id, newVal);
-        setDiceStatus([die.id], DieStatus.RESTING);
-      });
-    }
-  }, [dice, setDieValue, setDiceStatus]);
-
-  return (
-    <></>
-  );
-}
-
-function ThrowDieButton() {
-  const { throwDie } = useGameStore();
-
-  return (
-    <Button title="Throw Die" onPress={throwDie} />
-  );
-}
-
-function RollResultView({ key, roll }: { key: string, roll: RollResult }) {
-  return (
-    <View key={key} style={styles.rollResult}>
-      {roll.dice.map((die) => (
-        <Die2D
-          id={`${key}-${die.id}`}
-          value={die.value}
-          size={25}
-        />
-      ))}
-    </View>
-  );
-}
-
-function ScoredDice() {
-  const { rolls } = useGameStore();
-  return (
-    <View style={styles.scoredDice}>
-      {rolls.map((roll, index) => (
-        <RollResultView key={`roll-${index}`} roll={roll} />
-      ))}
-    </View>
-  );
-}
-
-function KeepDiceButton() {
-  const { dice, completeRoll, permissions } = useGameStore();
-  // How many dice are still resting after holds.
-  const restingDice = dice.filter((die) => die.status === DieStatus.RESTING);
-  const numResting = restingDice.length > 0 ? restingDice.length : 5;
-  return (
-    <Button title={`Roll ${numResting} Dice`} onPress={completeRoll} disabled={!permissions.canCompleteRoll} />
-  );
-}
-
-function StartTurnButton() {
-  const { advancePlayer, permissions } = useGameStore();
-  return (
-    <Button title="Next Player" onPress={advancePlayer} disabled={!permissions.canAdvancePlayer} />
-  );
-}
-
-function BankPointsButton() {
-  const { bankPoints, permissions } = useGameStore();
-  return (
-    <Button title="Bank Points" onPress={bankPoints} disabled={!permissions.canBankPoints} />
-  );
-}
+import React from 'react';
+import { StyleSheet, Text, View } from 'react-native';
 
 // Display the dice that have been thrown or are resting.
 function Playfield() {
@@ -256,6 +31,7 @@ function Playfield() {
   );
 
   const handleHold = (id: string) => {
+    console.log('handleHold', id, permissions.canHoldDice);
     if (!permissions.canHoldDice) {
       return;
     }
@@ -277,17 +53,8 @@ function Playfield() {
   );
 }
 
-function Winner() {
-  const { winner } = useGameStore();
-  return (
-    <View style={styles.container}>
-      <Text style={styles.text}>Winner: {winner?.name ?? 'Unknown'}</Text>
-    </View>
-  );
-}
-
 function Game() {
-  const { permissions, round, winner } = useGameStore();
+  const { round } = useGameStore();
 
   if (round === 0) {
     return null;
@@ -297,18 +64,18 @@ function Game() {
     <>
       <Scoreboard />
       <Text style={styles.text}>Round {round}</Text>
-      {!winner && <TurnStatus />}
-      {winner && <Winner />}
+      <TurnStatus />
+      <Winner />
       <ScoredDice />
       <Playfield />
-      {permissions.canThrowDie && <ThrowDieButton />}
+      <ThrowDieButton />
       <RollingSimulator />
-      {permissions.canCompleteRoll && <KeepDiceButton />}
-      {permissions.canStartTurn && <StartTurnButton />}
-      {permissions.canBankPoints && <BankPointsButton />}
-      {!winner && <QuitGameButton />}
-      {winner && <RematchButton />}
-      {winner && <StartNewGameButton />}
+      <KeepDiceButton />
+      <StartTurnButton />
+      <BankPointsButton />
+      <QuitGameButton />
+      <RematchButton />
+      <StartNewGameButton />
     </>
   );
 }
@@ -333,67 +100,6 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     textAlign: 'center',
   },
-  scoreboard: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    padding: 10,
-  },
-  player: {
-    flex: 1,
-    backgroundColor: '#fff',
-    padding: 10,
-    borderRadius: 10,
-    margin: 10,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-  },
-  currentPlayer: {
-    outlineWidth: 4,
-    outlineColor: 'yellow',
-    outlineStyle: 'solid',
-  },
-  playerRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    backgroundColor: '#fff',
-    padding: 10,
-    borderRadius: 10,
-    margin: 10,
-  },
-  name: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    flex: 1,
-  },
-  score: {
-    fontSize: 20,
-  },
-  form: {
-    flexDirection: 'column',
-    gap: 10,
-  },
-  formGroup: {
-    flexDirection: 'row',
-    gap: 10,
-  },
-  label: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    textAlign: 'right',
-    color: '#fff',
-  },
-  input: {
-    flex: 1,
-    backgroundColor: '#fff',
-    padding: 10,
-    borderRadius: 10,
-  },
-  turnStatus: {
-    flexDirection: 'column',
-    justifyContent: 'space-between',
-    padding: 10,
-  },
   playfield: {
     height: 120,
     flexDirection: 'row',
@@ -404,21 +110,4 @@ const styles = StyleSheet.create({
     padding: 10,
     backgroundColor: 'green',
   },
-  scoredDice: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    height: 60,
-    gap: 20,
-    padding: 10,
-    backgroundColor: '#999999',
-  },
-  rollResult: {
-    height: 40,
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
-    gap: 20,
-    padding: 10,
-    backgroundColor: 'blue',
-  }
 });

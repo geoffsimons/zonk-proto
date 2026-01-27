@@ -141,3 +141,30 @@ export function calculateInitialVelocity({
   console.log('Velocity', velocity);
   return velocity as [number, number, number];
 }
+
+export function getDotsForNumber(number: number): Array<[number, number]> {
+  const positions: Array<[number, number]> = [];
+  const offset = 0.25; // Distance from center for dots
+
+  switch (number) {
+    case 1:
+      positions.push([0, 0]);
+      break;
+    case 2:
+      positions.push([-offset, offset], [offset, -offset]);
+      break;
+    case 3:
+      positions.push([-offset, offset], [0, 0], [offset, -offset]);
+      break;
+    case 4:
+      positions.push([-offset, offset], [offset, offset], [-offset, -offset], [offset, -offset]);
+      break;
+    case 5:
+      positions.push([-offset, offset], [offset, offset], [0, 0], [-offset, -offset], [offset, -offset]);
+      break;
+    case 6:
+      positions.push([-offset, offset], [offset, offset], [-offset, 0], [offset, 0], [-offset, -offset], [offset, -offset]);
+      break;
+  }
+  return positions;
+}

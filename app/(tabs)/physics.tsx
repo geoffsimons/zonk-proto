@@ -1,5 +1,5 @@
 import Box from '@/components/Box';
-import { RigidDie } from '@/components/Die';
+import { RigidDie } from '@/components/Die3D';
 import LoadingView from '@/components/LoadingView';
 import OutOfBounds from '@/components/OutOfBounds';
 import { calculateCameraPositionFromAngles, calculateInitialVelocity } from '@/lib/math';

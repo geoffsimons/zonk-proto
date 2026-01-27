@@ -1,34 +1,6 @@
-import { calculateDieValue } from '@/lib/math';
+import { calculateDieValue, getDotsForNumber } from '@/lib/math';
 import { RapierRigidBody, RigidBody } from '@react-three/rapier';
 import React, { useCallback, useRef } from 'react';
-
-// Helper to get dot positions for each number (standard dice pattern)
-export function getDotsForNumber(number: number): Array<[number, number]> {
-  const positions: Array<[number, number]> = [];
-  const offset = 0.25; // Distance from center for dots
-
-  switch (number) {
-    case 1:
-      positions.push([0, 0]);
-      break;
-    case 2:
-      positions.push([-offset, offset], [offset, -offset]);
-      break;
-    case 3:
-      positions.push([-offset, offset], [0, 0], [offset, -offset]);
-      break;
-    case 4:
-      positions.push([-offset, offset], [offset, offset], [-offset, -offset], [offset, -offset]);
-      break;
-    case 5:
-      positions.push([-offset, offset], [offset, offset], [0, 0], [-offset, -offset], [offset, -offset]);
-      break;
-    case 6:
-      positions.push([-offset, offset], [offset, offset], [-offset, 0], [offset, 0], [-offset, -offset], [offset, -offset]);
-      break;
-  }
-  return positions;
-}
 
 /**
  * Standard 6-sided die with numbers 1-6 on each face
@@ -40,7 +12,7 @@ export function getDotsForNumber(number: number): Array<[number, number]> {
  * Face indices: 0=right(+X), 1=left(-X), 2=top(+Y), 3=bottom(-Y), 4=front(+Z), 5=back(-Z)
  * Face numbers: [3, 4, 5, 2, 1, 6]
  */
-export function Die() {
+export function Die3D() {
   const dieSize = 1;
   const dotSize = 0.08;
   const dotOffset = 0.51; // Slightly outside the cube face
@@ -127,7 +99,7 @@ export function RigidDie({ id, origin, initialVelocity, onRest }: { id: string, 
       onSleep={handleSleep}
       onWake={handleWake}
     >
-      <Die />
+      <Die3D />
     </RigidBody>
   );
 }
