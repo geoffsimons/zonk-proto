@@ -31,7 +31,6 @@ function Playfield() {
   );
 
   const handleHold = (id: string) => {
-    console.log('handleHold', id, permissions.canHoldDice);
     if (!permissions.canHoldDice) {
       return;
     }

@@ -47,7 +47,7 @@ const useGameStore = create<GameState>((set, get) => ({
         canStartTurn: !winner && turnState !== TurnState.IN_PROGRESS,
         canCompleteRoll: turnState === TurnState.IN_PROGRESS && heldDice.length > 0 && isValidHold,
         canThrowDie: turnState === TurnState.IN_PROGRESS && diceInHand.length > 0 && rollingDice.length === 0,
-        canHoldDice: turnState === TurnState.IN_PROGRESS && restingDice.length > 0 && isRollComplete,
+        canHoldDice: turnState === TurnState.IN_PROGRESS && isRollComplete,
         canBankPoints: turnState === TurnState.IN_PROGRESS && activePoints > 0 && isRollComplete,
         canAdvancePlayer: !winner && (turnState === TurnState.COMPLETE || turnState === TurnState.BUSTED),
       },
