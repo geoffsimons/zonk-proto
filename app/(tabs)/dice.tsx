@@ -1,4 +1,4 @@
-import { Die } from '@/components/Die3D';
+import { Die3D } from '@/components/Die3D';
 import { calculateAnglesFromPosition, calculateCameraPositionFromAngles } from '@/lib/math';
 import { OrbitControls, PerspectiveCamera } from '@react-three/drei/native';
 import { Canvas, useFrame } from '@react-three/fiber/native';
@@ -60,7 +60,7 @@ function AnimatedDieGroup() {
       <group
         rotation={[Math.atan(1 / Math.sqrt(2)), 0, Math.PI / 4]}
       >
-        <Die />
+        <Die3D />
       </group>
     </group>
   );
