@@ -78,8 +78,9 @@ export function KeepDiceButton() {
   // How many dice are still resting after holds.
   const restingDice = dice.filter((die) => die.status === DieStatus.RESTING);
   const numResting = restingDice.length > 0 ? restingDice.length : 5;
+  const dieOrDice = numResting === 1 ? 'Die' : 'Dice';
   return (
-    <Button title={`Roll ${numResting} Dice`} onPress={completeRoll} disabled={!permissions.canCompleteRoll} />
+    <Button title={`Roll ${numResting} ${dieOrDice}`} onPress={completeRoll} />
   );
 }
 
